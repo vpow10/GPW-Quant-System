@@ -1,0 +1,12 @@
+[tool.black]
+line-length = 92
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 92
+known_first_party = ["gpw-quant-system"]
+
+[tool.ruff]
+line-length = 92
+select = ["E", "F", "W", "C", "I", "T"]
