@@ -17,6 +17,8 @@ from typing import Any
 import httpx
 from dotenv import load_dotenv
 
+from saxo_auth import ensure_access_token
+
 load_dotenv()
 
 OPENAPI_BASE = os.getenv("SAXO_OPENAPI_BASE")
@@ -33,7 +35,7 @@ def _require_token() -> str:
 
 def api_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     """Minimal GET wrapper with useful error text."""
-    token = _require_token()
+    token = ensure_access_token()
     url = f"{OPENAPI_BASE}{path}"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     with httpx.Client(timeout=30) as client:
