@@ -1,6 +1,7 @@
 # app_saxo_textual.py
 from __future__ import annotations
 
+import csv
 import json
 import os
 from pathlib import Path
@@ -35,6 +36,24 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "orders.jsonl"
 
 
+def load_gpw_uics() -> list[tuple[str, int]]:
+    """Load GPW UICs and names from gpw_selected.csv"""
+    path = Path("gpw_selected.csv")
+    if not path.exists():
+        return [("ORLEN Spolka Akcyjna", 25275)]
+    rows: list[tuple[str, int]] = []
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                uic = int(row["UIC"])
+                name = row["Name"]
+                rows.append((name, uic))  # tylko nazwa widoczna
+            except Exception:
+                continue
+    return rows
+
+
 # ---- UI ----
 class OrderUI(App):
     CSS = """
@@ -58,8 +77,10 @@ class OrderUI(App):
         yield Header(show_clock=True)
         with Horizontal(id="main"):
             with Vertical(id="form"):
-                yield Label("UIC")
-                yield Select(options=[("25275", 25275)], value=25275, id="uic")
+                yield Label("SPÓŁKI")
+                options = load_gpw_uics()
+                default_val = options[0][1] if options else 25275
+                yield Select(options=options, value=default_val, id="uic")
 
                 yield Label("AssetType")
                 yield Select(options=[("Stock", "Stock")], value="Stock", id="asset")

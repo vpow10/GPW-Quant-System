@@ -17,7 +17,7 @@ from typing import Any
 import httpx
 from dotenv import load_dotenv
 
-from saxo_auth import ensure_access_token
+from .saxo_auth import ensure_access_token
 
 load_dotenv()
 
@@ -94,6 +94,39 @@ def cmd_chart(args: argparse.Namespace) -> None:
         )
 
 
+def cmd_gpw_uics_from_list(args: argparse.Namespace) -> None:
+    names = [
+        "Asseco Poland SA",
+        "Bank Handlowy w Warszawie SA",
+        "Bank Polska Kasa Opieki SA",
+        "Boryszew SA",
+        "Globe Trade Centre SA",
+        "Jastrzebska Spolka Weglowa SA",
+        "Kernel Holding SA",
+        "KGHM Polska Miedz SA",
+        "LW Bogdanka SA",
+        "PGE Polska Grupa Energetyczna SA",
+        "ORLEN Spolka Akcyjna",
+        "Powszechna Kasa Oszczednosci Bank Polski SA",
+        "Powszechny Zaklad Ubezpieczen SA",
+        "Tauron Polska Energia SA",
+    ]
+
+    with open("gpw_selected.csv", "w") as f:
+        f.write("UIC,Name\n")
+        for name in names:
+            data = api_get("/ref/v1/instruments", {"Keywords": name, "AssetTypes": "Stock"})
+            items = data.get("Data", [])
+            if not items:
+                print(f"Not found: {name}")
+                continue
+            first = items[0]
+            f.write(f"{first['Identifier']},{first['Description']}\n")
+            print(f"Found {first['Identifier']} for {name}")
+
+    print("Saved gpw_selected.csv")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Minimal Saxo OpenAPI probe (SIM).")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -110,6 +143,9 @@ def main() -> None:
     p2.add_argument("--horizon", type=int, default=1440, help="minutes (1440 daily)")
     p2.add_argument("--count", type=int, default=100, help="max samples (<=1200)")
     p2.set_defaults(func=cmd_chart)
+
+    p5 = sub.add_parser("gpw_uics_from_list", help="Fetch UICs for listed GPW names")
+    p5.set_defaults(func=cmd_gpw_uics_from_list)
 
     args = parser.parse_args()
     args.func(args)
