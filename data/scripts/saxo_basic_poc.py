@@ -4,12 +4,14 @@ import argparse
 import json
 import logging
 import os
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
 import httpx
 from dotenv import load_dotenv
+
 from .saxo_auth import ensure_access_token
 
 load_dotenv()
@@ -24,12 +26,11 @@ LOG_DIR = Path(os.getenv("JOURNAL_DIR", "journals"))
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "orders.jsonl"
 
-
-# logging.basicConfig(
-#     level=os.getenv("LOG_LEVEL", "INFO"),
-#     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-# )
-# logger = logging.getLogger("saxo_basic")
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
+logger = logging.getLogger("saxo_basic")
 
 
 def _headers() -> dict[str, str]:
@@ -39,18 +40,26 @@ def _headers() -> dict[str, str]:
 
 def api_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     url = f"{OPENAPI_BASE}{path}"
-    # logger.debug("POST %s payload=%s", url, payload)
+    logger.debug("POST %s payload=%s", url, payload)
     with httpx.Client(timeout=TIMEOUT) as client:
         r = client.post(url, json=payload, headers=_headers())
         try:
             r.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            detail: Any
+            ctype = r.headers.get("content-type", "")
+            req_id = r.headers.get("X-Request-Id") or r.headers.get("Request-Id")
             try:
-                detail = r.json()
+                detail: Any = r.json()
             except Exception:
-                detail = r.text
-            raise SystemExit(f"HTTP {r.status_code} POST {url} -> {detail}") from exc
+                detail = r.text or repr(r.content)
+            raise SystemExit(
+                "Order POST failed.\n"
+                f"  url         : {url}\n"
+                f"  status      : {r.status_code}\n"
+                f"  content-type: {ctype}\n"
+                f"  request-id  : {req_id}\n"
+                f"  response    : {detail}"
+            ) from exc
         resp_json: dict[str, Any] = r.json()  # type: ignore[assignment]
         return resp_json
 
@@ -60,7 +69,7 @@ def log_json(obj: dict[str, Any]) -> None:
     obj_out = {"ts": datetime.utcnow().isoformat() + "Z", **obj}
     with LOG_FILE.open("a", encoding="utf-8") as f:
         f.write(json.dumps(obj_out, ensure_ascii=False) + "\n")
-    # logger.debug("Appended JSON log to %s", LOG_FILE)
+    logger.debug("Appended JSON log to %s", LOG_FILE)
 
 
 def build_order_payload(
@@ -71,6 +80,7 @@ def build_order_payload(
     amount: float,
     order_type: str,
     price: Optional[float] = None,
+    client_order_id: Optional[str] = None,
 ) -> dict[str, Any]:
     if not ACCOUNT_KEY:
         raise SystemExit("Brak SAXO_ACCOUNT_KEY w .env — wymagane do składania zleceń.")
@@ -82,6 +92,7 @@ def build_order_payload(
         "OrderType": order_type,  # "Market" | "Limit" | ...
         "Amount": amount,  # ilość/szt./nominał
         "ManualOrder": False,
+        "ClientOrderId": client_order_id or str(uuid.uuid4()),
     }
     if order_type.lower() == "limit":
         if price is None:
@@ -106,6 +117,10 @@ def main() -> None:
         help="Wyślij realne zlecenie do SIM (/orders). Bez niej: /preview.",
     )
     parser.add_argument("--tag", help="Opcjonalny identyfikator/etykieta do logu")
+    parser.add_argument(
+        "--client-order-id",
+        help="Własny identyfikator zlecenia.",
+    )
     args = parser.parse_args()
 
     payload = build_order_payload(
@@ -115,13 +130,14 @@ def main() -> None:
         amount=args.amount,
         order_type=args.order_type,
         price=args.price,
+        client_order_id=args.client_order_id,
     )
 
     path = "/trade/v2/orders" if args.place else "/trade/v2/orders/preview"
     resp = api_post(path, payload)
 
     mode = "PLACE" if args.place else "PREVIEW"
-    # logger.info("[%s] OK. Pola odpowiedzi: %s", mode, list(resp.keys())[:8])
+    logger.info("[%s] OK. Pola odpowiedzi: %s", mode, list(resp.keys())[:8])
 
     log_json(
         {

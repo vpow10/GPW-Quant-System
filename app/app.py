@@ -1,32 +1,38 @@
 # app_saxo_textual.py
 from __future__ import annotations
+
 import json
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-import httpx
 from dotenv import load_dotenv
-from data.scripts.saxo_auth import ensure_access_token
-from data.scripts.saxo_basic_poc import build_order_payload, log_json, api_post
-
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import (
-    Header, Footer, Label, Button, Input, Select, RadioSet, RadioButton, Log
+    Button,
+    Footer,
+    Header,
+    Input,
+    Label,
+    Log,
+    RadioButton,
+    RadioSet,
+    Select,
 )
+
+from data.scripts.saxo_basic_poc import api_post, build_order_payload, log_json
 
 # ---- konfig / .env ----
 load_dotenv()
-OPENAPI_BASE: str = os.getenv("SAXO_OPENAPI_BASE", "https://gateway.saxobank.com/sim/openapi")
+OPENAPI_BASE: str = os.getenv(
+    "SAXO_OPENAPI_BASE", "https://gateway.saxobank.com/sim/openapi"
+)
 ACCOUNT_KEY: Optional[str] = os.getenv("SAXO_ACCOUNT_KEY")
 TIMEOUT: int = int(os.getenv("SAXO_CLIENT_TIMEOUT", "30"))
 LOG_DIR = Path(os.getenv("JOURNAL_DIR", "journals"))
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "orders.jsonl"
-
-
 
 
 # ---- UI ----
@@ -42,7 +48,11 @@ class OrderUI(App):
     #status { padding: 1; }
     """
 
-    BINDINGS = [("ctrl+p", "preview", "Preview"), ("ctrl+o", "place", "Place"), ("q", "quit", "Quit")]
+    BINDINGS = [
+        ("ctrl+p", "preview", "Preview"),
+        ("ctrl+o", "place", "Place"),
+        ("q", "quit", "Quit"),
+    ]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -86,32 +96,58 @@ class OrderUI(App):
         yield Footer()
 
     def _read_form(self) -> dict[str, Any]:
-        uic = int(self.query_one("#uic", Select).value)
-        asset = str(self.query_one("#asset", Select).value)
+        uic_val = self.query_one("#uic", Select).value
+        if not isinstance(uic_val, (int, str)):
+            raise ValueError("Select an instrument (UIC).")
+        uic = int(uic_val)
+
+        asset_val = self.query_one("#asset", Select).value
+        if not isinstance(asset_val, str):
+            raise ValueError("Select an Asset Type.")
+        asset = asset_val
+
         side_rs = self.query_one("#side", RadioSet)
-        side = "Buy" if side_rs.pressed_button and side_rs.pressed_button.id == "buy" else "Sell"
+        side = (
+            "Buy"
+            if side_rs.pressed_button and side_rs.pressed_button.id == "buy"
+            else "Sell"
+        )
+
         amount_raw = self.query_one("#amount", Input).value.strip() or "1"
         try:
             amount = float(amount_raw)
         except ValueError:
-            raise ValueError("Amount musi być liczbą.")
-        otype = str(self.query_one("#otype", Select).value)
+            raise ValueError("Amount must be a number.")
+
+        otype_val = self.query_one("#otype", Select).value
+        if not isinstance(otype_val, str):
+            raise ValueError("Select an Order Type.")
+        otype = otype_val
+
         price_raw = self.query_one("#price", Input).value.strip()
         price: Optional[float] = float(price_raw) if price_raw else None
 
-        return {"uic": uic, "asset_type": asset, "side": side, "amount": amount, "order_type": otype, "price": price}
+        return {
+            "uic": uic,
+            "asset_type": asset,
+            "side": side,
+            "amount": amount,
+            "order_type": otype,
+            "price": price,
+        }
 
     def _set_status(self, text: str) -> None:
         self.query_one("#status", Label).update(text)
 
     def _show_payload(self, payload: dict[str, Any]) -> None:
-        log = self.query_one("#payload", Log); log.clear()
+        log = self.query_one("#payload", Log)
+        log.clear()
         log.write_line(json.dumps(payload, indent=2, ensure_ascii=False))
 
     def _show_response(self, resp: Any) -> None:
-        log = self.query_one("#response", Log); log.clear()
+        log = self.query_one("#response", Log)
+        log.clear()
         log.write_line(json.dumps(resp, indent=2, ensure_ascii=False))
-
 
     async def _run_mode(self, place: bool) -> None:
         try:
@@ -129,7 +165,7 @@ class OrderUI(App):
             resp = api_post(path, payload)
             self._show_response(resp)
             log_json({"mode": mode, **vals, "payload": payload, "response": resp})
-            self._set_status(f"Zamówienie złożone")
+            self._set_status("Zamówienie złożone")
         except Exception as e:
             self._set_status(f"[{mode}] błąd: {e}")
 
@@ -158,6 +194,7 @@ class OrderUI(App):
 
     def action_place(self) -> None:
         self.run_worker(self._run_mode(place=True), exclusive=True)
+
 
 if __name__ == "__main__":
     OrderUI().run()
