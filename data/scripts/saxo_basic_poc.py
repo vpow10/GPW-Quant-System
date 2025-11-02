@@ -10,7 +10,7 @@ from typing import Any, Optional
 
 import httpx
 from dotenv import load_dotenv
-from saxo_auth import ensure_access_token
+from .saxo_auth import ensure_access_token
 
 load_dotenv()
 
@@ -25,11 +25,11 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "orders.jsonl"
 
 
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-)
-logger = logging.getLogger("saxo_basic")
+# logging.basicConfig(
+#     level=os.getenv("LOG_LEVEL", "INFO"),
+#     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+# )
+# logger = logging.getLogger("saxo_basic")
 
 
 def _headers() -> dict[str, str]:
@@ -39,7 +39,7 @@ def _headers() -> dict[str, str]:
 
 def api_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     url = f"{OPENAPI_BASE}{path}"
-    logger.debug("POST %s payload=%s", url, payload)
+    # logger.debug("POST %s payload=%s", url, payload)
     with httpx.Client(timeout=TIMEOUT) as client:
         r = client.post(url, json=payload, headers=_headers())
         try:
@@ -60,7 +60,7 @@ def log_json(obj: dict[str, Any]) -> None:
     obj_out = {"ts": datetime.utcnow().isoformat() + "Z", **obj}
     with LOG_FILE.open("a", encoding="utf-8") as f:
         f.write(json.dumps(obj_out, ensure_ascii=False) + "\n")
-    logger.debug("Appended JSON log to %s", LOG_FILE)
+    # logger.debug("Appended JSON log to %s", LOG_FILE)
 
 
 def build_order_payload(
@@ -121,7 +121,7 @@ def main() -> None:
     resp = api_post(path, payload)
 
     mode = "PLACE" if args.place else "PREVIEW"
-    logger.info("[%s] OK. Pola odpowiedzi: %s", mode, list(resp.keys())[:8])
+    # logger.info("[%s] OK. Pola odpowiedzi: %s", mode, list(resp.keys())[:8])
 
     log_json(
         {
