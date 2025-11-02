@@ -9,7 +9,7 @@ env
 .venv/
 .env
 /.secrets/
-
+data/scripts/.secrets/
 # Pytest
 .pytest_cache/
 
