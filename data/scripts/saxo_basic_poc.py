@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import logging
 import os
 import uuid
 from datetime import datetime
@@ -26,12 +25,6 @@ LOG_DIR = Path(os.getenv("JOURNAL_DIR", "journals"))
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "orders.jsonl"
 
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-)
-logger = logging.getLogger("saxo_basic")
-
 
 def _headers() -> dict[str, str]:
     token = ensure_access_token()
@@ -40,7 +33,6 @@ def _headers() -> dict[str, str]:
 
 def api_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     url = f"{OPENAPI_BASE}{path}"
-    logger.debug("POST %s payload=%s", url, payload)
     with httpx.Client(timeout=TIMEOUT) as client:
         r = client.post(url, json=payload, headers=_headers())
         try:
@@ -69,7 +61,6 @@ def log_json(obj: dict[str, Any]) -> None:
     obj_out = {"ts": datetime.utcnow().isoformat() + "Z", **obj}
     with LOG_FILE.open("a", encoding="utf-8") as f:
         f.write(json.dumps(obj_out, ensure_ascii=False) + "\n")
-    logger.debug("Appended JSON log to %s", LOG_FILE)
 
 
 def build_order_payload(
@@ -137,7 +128,6 @@ def main() -> None:
     resp = api_post(path, payload)
 
     mode = "PLACE" if args.place else "PREVIEW"
-    logger.info("[%s] OK. Pola odpowiedzi: %s", mode, list(resp.keys())[:8])
 
     log_json(
         {
