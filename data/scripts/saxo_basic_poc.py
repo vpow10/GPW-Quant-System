@@ -24,7 +24,7 @@ LOG_DIR = Path(os.getenv("JOURNAL_DIR", "journals"))
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "orders.jsonl"
 
-# proste logowanie (dostosuj poziom przez LOG_LEVEL=INFO/DEBUG w env)
+
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -45,13 +45,11 @@ def api_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
         try:
             r.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            # pokaż treść błędu (json lub tekst)
             detail: Any
             try:
                 detail = r.json()
             except Exception:
                 detail = r.text
-            # ruff E722 nie dotyczy, bo nie używamy bare except
             raise SystemExit(f"HTTP {r.status_code} POST {url} -> {detail}") from exc
         resp_json: dict[str, Any] = r.json()  # type: ignore[assignment]
         return resp_json
