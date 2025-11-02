@@ -86,3 +86,103 @@ EURUSD | horizon=60 | samples=120
 2024-01-01T10:00:00Z  O:... H:... L:... C:... V:...
 ...
 ```
+
+
+### `saxo_basic.py` — Place or preview orders
+
+Handles basic order creation via Saxo OpenAPI (`/trade/v2/orders` and `/trade/v2/orders/preview`).  
+Requires a valid access token (from `saxo_auth.py login`) and your `SAXO_ACCOUNT_KEY` set in `.env`.
+
+#### Env vars
+| Var | Required? | Default | Description |
+|-----|:----------:|---------|--------------|
+| `SAXO_ACCOUNT_KEY` | **Yes** | – | Your trading account key (needed to send orders) |
+| `SAXO_OPENAPI_BASE` | **Yes** | `https://gateway.saxobank.com/sim/openapi` | API base URL |
+| `SAXO_CLIENT_TIMEOUT` | No | `30` | HTTP timeout (seconds) |
+| `JOURNAL_DIR` | No | `journals` | Directory for JSONL trade logs |
+| `LOG_LEVEL` | No | `INFO` | Logging verbosity (`DEBUG`, `INFO`, etc.) |
+
+---
+
+#### Usage
+```bash
+python saxo_basic.py [options]
+```
+
+| Arg | Type / Default | Required | Meaning |
+|-----|----------------|:--------:|---------|
+| `--uic` | `int` | **Yes** | Instrument UIC |
+| `--asset-type` | `str`, `Stock` | No | Saxo asset class (e.g. `Stock`, `FxSpot`) |
+| `--side` | `Buy` \| `Sell` | **Yes** | Order side |
+| `--amount` | `float`, `1.0` | No | Quantity / nominal |
+| `--order-type` | `Market` \| `Limit` | No | Order type |
+| `--price` | `float` | If Limit | Required for limit orders |
+| `--place` | flag | No | Actually places the order (otherwise preview only) |
+| `--tag` | `str` | No | Optional label saved in log |
+
+---
+
+#### Examples
+
+**Preview only (no execution)**  
+Runs `/trade/v2/orders/preview` to simulate an order:
+```bash
+python saxo_basic.py \
+  --uic 21 \
+  --asset-type FxSpot \
+  --side Buy \
+  --amount 10000 \
+  --order-type Market \
+  --tag "dry-run"
+```
+
+**Market order (execute trade)**
+```bash
+python saxo_basic.py \
+  --uic 21 \
+  --asset-type FxSpot \
+  --side Sell \
+  --amount 10000 \
+  --order-type Market \
+  --place \
+  --tag "market-run"
+```
+
+**Limit order (uses all flags)**
+```bash
+python saxo_basic.py \
+  --uic 25275 \
+  --asset-type Stock \
+  --side Buy \
+  --amount 5 \
+  --order-type Limit \
+  --price 62.50 \
+  --place \
+  --tag "cheatsheet-demo"
+```
+
+---
+
+#### Output & logs
+- Prints a short confirmation and top-level response fields.  
+- Writes a JSON record to `journals/orders.jsonl` containing:
+  - Timestamp (`ts`)
+  - Mode (`PREVIEW` or `PLACE`)
+  - Payload and API response
+  - Optional `tag`
+
+Example log entry:
+```json
+{
+  "ts": "2025-11-02T10:33:41Z",
+  "mode": "PLACE",
+  "uic": 21,
+  "side": "Buy",
+  "amount": 10000,
+  "order_type": "Market",
+  "response": {...},
+  "tag": "market-run"
+}
+```
+
+> 💡 **Tip:** Run with `LOG_LEVEL=DEBUG` to see full request and response details.
