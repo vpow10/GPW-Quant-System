@@ -186,3 +186,27 @@ Example log entry:
 ```
 
 > 💡 **Tip:** Run with `LOG_LEVEL=DEBUG` to see full request and response details.
+
+### stooq_fetch.py — Fetch historical data from Stooq.pl
+Fetches historical OHLCV data from [Stooq.pl](https://stooq.pl/) for given tickers and saves them as CSV files in `data/raw/`.
+#### Usage
+```bash
+# single symbol (set both dates to avoid flaky responses)
+python data/scripts/stooq_fetch.py fetch-one pko --start 2015-01-01 --end 2025-11-09
+
+# all symbols from gpw_selected.csv (uses the mapping inside stooq_fetch.py)
+python data/scripts/stooq_fetch.py fetch-all --start 2015-01-01 --end 2025-11-09
+```
+| Command    | Args                          | Type / Default        | What it does                                      |
+| ---------- | ----------------------------- | --------------------- | ------------------------------------------------- |
+| `fetch-one` | `ticker`                     | `str`                 | Fetches data for a single ticker symbol               |
+|            | `--start`                     | `str`, default `2000-01-01` | Start date (YYYY-MM-DD)                           |
+|            | `--end`                       | `str`, default `today`      | End date (YYYY-MM-DD)                             |
+| `fetch-all` | `--start`                     | `str`, default `2000-01-01` | Start date (YYYY-MM-DD)                           |
+|            | `--end`                       | `str`, default `today`      | End date (YYYY-MM-DD)                             |
+
+Output: saves CSV files to `data/raw/<ticker>.csv`, e.g. `data/raw/pko.csv`
+```csv
+Data,Otwarcie,Najwyzszy,Najnizszy,Zamkniecie,Wolumen
+2025-10-01,70.5,71.62,69.64,71.18,3302489
+```

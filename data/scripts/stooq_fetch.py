@@ -57,6 +57,8 @@ def build_url(
 def fetch_csv(
     symbol: str, interval: str = "d", start: date | None = None, end: date | None = None
 ) -> bytes:
+    if start is None:
+        start = date(2000, 1, 1)
     if end is None:
         end = date.today()
     url = build_url(symbol, interval, start, end)
