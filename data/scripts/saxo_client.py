@@ -98,24 +98,29 @@ class SaxoClient:
         client_order_id: Optional[str] = None,
         manual_order: bool = False,
     ) -> dict[str, Any]:
+        if not self.account_key:
+            raise SystemExit("Brak SAXO_ACCOUNT_KEY w .env — wymagane do składania zleceń.")
+
         payload: dict[str, Any] = {
             "AccountKey": self.account_key,
             "Uic": uic,
-            "AssetType": asset_type,  # np. "Stock", "FxSpot"
-            "BuySell": side,  # "Buy" | "Sell"
-            "OrderType": order_type,  # "Market" | "Limit" | ...
-            "Amount": amount,  # ilość/szt./nominał
+            "AssetType": asset_type,
+            "BuySell": side,
+            "OrderType": order_type,
+            "Amount": amount,
             "ManualOrder": manual_order,
             "ClientOrderId": client_order_id or str(uuid.uuid4()),
         }
-        if order_type.lower() == "limit":
+
+        if order_type.lower() != "market":
             if price is None:
-                raise SystemExit("Dla OrderType=Limit wymagany jest price.")
-            payload["Price"] = price
+                raise SystemExit("Dla OrderType≠Market wymagany jest price (OrderPrice).")
+            payload["OrderPrice"] = price
+
         return payload
 
     def preview_order(self, payload: dict[str, Any]) -> dict[str, Any]:
-        return self.api_post("/trade/v2/orders/preview", payload)
+        return self.api_post("/trade/v2/orders/precheck", payload)
 
     def place_order(self, payload: dict[str, Any]) -> dict[str, Any]:
         resp = self.api_post("/trade/v2/orders", payload)

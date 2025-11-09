@@ -21,7 +21,6 @@ from textual.widgets import (
     Select,
 )
 
-# >>> ZMIANA: importujemy klasę zamiast funkcji
 from data.scripts.saxo_client import SaxoClient
 
 # ---- konfig / .env ----
@@ -67,7 +66,6 @@ class OrderUI(App):
 
     def __init__(self) -> None:
         super().__init__()
-        # >>> ZMIANA: inicjalizacja klienta
         self.client: SaxoClient = SaxoClient.from_env()
 
     def compose(self) -> ComposeResult:
@@ -100,7 +98,13 @@ class OrderUI(App):
                 )
 
                 yield Label("Price")
-                yield Input(value="", placeholder="float", id="price")
+
+                yield Input(
+                    value="",
+                    placeholder="float (wymagane dla Limit)",
+                    id="price",
+                    disabled=True,
+                )
 
                 with Horizontal():
                     yield Button("Build payload", id="build", variant="primary")
@@ -116,6 +120,28 @@ class OrderUI(App):
                 yield Label("Response")
                 yield Log(id="response")
         yield Footer()
+
+    def _toggle_price_field(self, order_type: str) -> None:
+        price_input = self.query_one("#price", Input)
+        if order_type == "Limit":
+            price_input.disabled = False
+            if not price_input.value:
+                price_input.placeholder = "float (wymagane dla Limit)"
+        else:
+            price_input.value = ""
+            price_input.disabled = True
+            price_input.placeholder = "float (wymagane dla Limit)"
+
+    def on_mount(self) -> None:
+        otype_val = self.query_one("#otype", Select).value
+        if isinstance(otype_val, str):
+            self._toggle_price_field(otype_val)
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if event.select.id == "otype":
+            val = event.value if isinstance(event.value, str) else str(event.value)
+            self._toggle_price_field(val)
+            self._set_status("")
 
     def _read_form(self) -> dict[str, Any]:
         uic_val = self.query_one("#uic", Select).value
@@ -149,10 +175,9 @@ class OrderUI(App):
         price_raw = self.query_one("#price", Input).value.strip()
         price: Optional[float] = float(price_raw) if price_raw else None
 
-        # Dodatkowa walidacja UI, żeby błąd był wcześniej
         if otype == "Limit" and price is None:
             raise ValueError("Dla OrderType=Limit podaj Price.")
-        if otype == "Market" and price is not None:
+        if otype == "Market" and price is not None and price_raw != "":
             raise ValueError("Price ma sens tylko dla OrderType=Limit.")
 
         return {
@@ -194,7 +219,6 @@ class OrderUI(App):
             else:
                 resp = self.client.preview_order(payload)
             self._show_response(resp)
-            # logowanie jest już w metodach clienta; nic więcej nie trzeba
             self._set_status("Zamówienie złożone" if place else "Podgląd wykonany")
         except Exception as e:
             self._set_status(f"[{mode}] błąd: {e}")
@@ -218,6 +242,10 @@ class OrderUI(App):
             self.query_one("#payload", Log).clear()
             self.query_one("#response", Log).clear()
             self._set_status("Wyczyszczono.")
+            # przywróć stan pola Price wg aktualnego OrderType
+            otype = self.query_one("#otype", Select).value
+            if isinstance(otype, str):
+                self._toggle_price_field(otype)
 
     def action_preview(self) -> None:
         self.run_worker(self._run_mode(place=False), exclusive=True)
