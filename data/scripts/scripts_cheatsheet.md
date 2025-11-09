@@ -210,3 +210,28 @@ Output: saves CSV files to `data/raw/<ticker>.csv`, e.g. `data/raw/pko.csv`
 Data,Otwarcie,Najwyzszy,Najnizszy,Zamkniecie,Wolumen
 2025-10-01,70.5,71.62,69.64,71.18,3302489
 ```
+
+### preprocess_gpw.py — Preprocess raw Stooq data
+Processes raw CSV files from `data/raw/` (fetched via `stooq_fetch.py`) and saves cleaned Parquet files to `data/processed/`.
+#### Usage
+```bash
+# process everything in data/raw/ → data/processed/gpw/
+python data/scripts/preprocess_gpw.py all
+
+# or process just PKO
+python data/scripts/preprocess_gpw.py one --symbol pko
+```
+| Command | Args                | Type / Default | What it does                           |
+| ------- | ------------------- | -------------- | -------------------------------------- |
+| `all`   | *(none)*            | –              | Processes all CSV files in `data/raw/` |
+| `one`   | `--symbol`          | `str`           | Processes a single symbol (e.g. `pko`) |
+Outputs:
+```bash
+data/processed/gpw/
+  pko.csv
+  pko.parquet
+  ... (others)
+  combined.csv
+  combined.parquet
+  _quality_report.csv
+```
