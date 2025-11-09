@@ -1,0 +1,123 @@
+# data/scripts/saxo_basic_poc.py
+from __future__ import annotations
+
+import json
+import os
+import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional
+
+import httpx
+from dotenv import load_dotenv
+
+from .saxo_auth import ensure_access_token
+
+load_dotenv()
+
+
+class SaxoClient:
+    """Minimalny klient do składania / podglądu zleceń (SIM) + log JSONL."""
+
+    def __init__(
+        self,
+        *,
+        openapi_base: str,
+        account_key: str,
+        timeout: int = 30,
+        log_file: Path | str = Path(os.getenv("JOURNAL_DIR", "journals")) / "orders.jsonl",
+    ) -> None:
+        self.openapi_base = openapi_base.rstrip("/")
+        self.account_key = account_key
+        self.timeout = timeout
+        self.log_file = Path(log_file)
+        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # ---- fabryka z ENV ----
+    @classmethod
+    def from_env(cls) -> "SaxoClient":
+        openapi_base: str = os.getenv(
+            "SAXO_OPENAPI_BASE", "https://gateway.saxobank.com/sim/openapi"
+        )
+        account_key: Optional[str] = os.getenv("SAXO_ACCOUNT_KEY")
+        if not account_key:
+            raise SystemExit("Brak SAXO_ACCOUNT_KEY w .env — wymagane do składania zleceń.")
+        timeout: int = int(os.getenv("SAXO_CLIENT_TIMEOUT", "30"))
+        journal_dir = Path(os.getenv("JOURNAL_DIR", "journals"))
+        return cls(
+            openapi_base=openapi_base,
+            account_key=account_key,
+            timeout=timeout,
+            log_file=journal_dir / "orders.jsonl",
+        )
+
+    @classmethod
+    def _headers(cls) -> dict[str, str]:
+        token = ensure_access_token()
+        return {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
+    def api_post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        url = f"{self.openapi_base}{path}"
+        with httpx.Client(timeout=self.timeout) as client:
+            r = client.post(url, json=payload, headers=self._headers())
+            try:
+                r.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                ctype = r.headers.get("content-type", "")
+                req_id = r.headers.get("X-Request-Id") or r.headers.get("Request-Id")
+                try:
+                    detail: Any = r.json()
+                except Exception:
+                    detail = r.text or repr(r.content)
+                raise SystemExit(
+                    "Order POST failed.\n"
+                    f"  url         : {url}\n"
+                    f"  status      : {r.status_code}\n"
+                    f"  content-type: {ctype}\n"
+                    f"  request-id  : {req_id}\n"
+                    f"  response    : {detail}"
+                ) from exc
+            resp_json: dict[str, Any] = r.json()  # type: ignore[assignment]
+            return resp_json
+
+    def log_json(self, obj: dict[str, Any]) -> None:
+        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+        obj_out = {"ts": datetime.utcnow().isoformat() + "Z", **obj}
+        with self.log_file.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(obj_out, ensure_ascii=False) + "\n")
+
+    def build_order_payload(
+        self,
+        *,
+        uic: int,
+        asset_type: str,
+        side: str,
+        amount: float,
+        order_type: str,
+        price: Optional[float] = None,
+        client_order_id: Optional[str] = None,
+        manual_order: bool = False,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "AccountKey": self.account_key,
+            "Uic": uic,
+            "AssetType": asset_type,  # np. "Stock", "FxSpot"
+            "BuySell": side,  # "Buy" | "Sell"
+            "OrderType": order_type,  # "Market" | "Limit" | ...
+            "Amount": amount,  # ilość/szt./nominał
+            "ManualOrder": manual_order,
+            "ClientOrderId": client_order_id or str(uuid.uuid4()),
+        }
+        if order_type.lower() == "limit":
+            if price is None:
+                raise SystemExit("Dla OrderType=Limit wymagany jest price.")
+            payload["Price"] = price
+        return payload
+
+    def preview_order(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.api_post("/trade/v2/orders/preview", payload)
+
+    def place_order(self, payload: dict[str, Any]) -> dict[str, Any]:
+        resp = self.api_post("/trade/v2/orders", payload)
+        self.log_json({"request": payload, "response": resp})
+        return resp
