@@ -21,3 +21,7 @@ data/scripts/.secrets/
 
 # orders
 journals/
+
+# data
+data/raw/
+data/processed/
