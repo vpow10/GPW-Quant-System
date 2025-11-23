@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 from pathlib import Path
 from typing import Any, Optional
 
@@ -22,18 +21,10 @@ from textual.widgets import (
     Select,
 )
 
-from data.scripts.saxo_basic_poc import api_post, build_order_payload, log_json
+from data.scripts.saxo_client import SaxoClient
 
 # ---- konfig / .env ----
 load_dotenv()
-OPENAPI_BASE: str = os.getenv(
-    "SAXO_OPENAPI_BASE", "https://gateway.saxobank.com/sim/openapi"
-)
-ACCOUNT_KEY: Optional[str] = os.getenv("SAXO_ACCOUNT_KEY")
-TIMEOUT: int = int(os.getenv("SAXO_CLIENT_TIMEOUT", "30"))
-LOG_DIR = Path(os.getenv("JOURNAL_DIR", "journals"))
-LOG_DIR.mkdir(parents=True, exist_ok=True)
-LOG_FILE = LOG_DIR / "orders.jsonl"
 
 
 def load_gpw_uics() -> list[tuple[str, int]]:
@@ -73,6 +64,10 @@ class OrderUI(App):
         ("q", "quit", "Quit"),
     ]
 
+    def __init__(self) -> None:
+        super().__init__()
+        self.client: SaxoClient = SaxoClient.from_env()
+
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal(id="main"):
@@ -96,10 +91,20 @@ class OrderUI(App):
                 yield Input(value="1", placeholder="float", id="amount")
 
                 yield Label("OrderType")
-                yield Select(options=[("Market", "Market")], value="Market", id="otype")
+                yield Select(
+                    options=[("Market", "Market"), ("Limit", "Limit")],
+                    value="Market",
+                    id="otype",
+                )
 
                 yield Label("Price")
-                yield Input(value="", placeholder="float", id="price")
+
+                yield Input(
+                    value="",
+                    placeholder="float (wymagane dla Limit)",
+                    id="price",
+                    disabled=True,
+                )
 
                 with Horizontal():
                     yield Button("Build payload", id="build", variant="primary")
@@ -115,6 +120,28 @@ class OrderUI(App):
                 yield Label("Response")
                 yield Log(id="response")
         yield Footer()
+
+    def _toggle_price_field(self, order_type: str) -> None:
+        price_input = self.query_one("#price", Input)
+        if order_type == "Limit":
+            price_input.disabled = False
+            if not price_input.value:
+                price_input.placeholder = "float (wymagane dla Limit)"
+        else:
+            price_input.value = ""
+            price_input.disabled = True
+            price_input.placeholder = "float (wymagane dla Limit)"
+
+    def on_mount(self) -> None:
+        otype_val = self.query_one("#otype", Select).value
+        if isinstance(otype_val, str):
+            self._toggle_price_field(otype_val)
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if event.select.id == "otype":
+            val = event.value if isinstance(event.value, str) else str(event.value)
+            self._toggle_price_field(val)
+            self._set_status("")
 
     def _read_form(self) -> dict[str, Any]:
         uic_val = self.query_one("#uic", Select).value
@@ -148,6 +175,11 @@ class OrderUI(App):
         price_raw = self.query_one("#price", Input).value.strip()
         price: Optional[float] = float(price_raw) if price_raw else None
 
+        if otype == "Limit" and price is None:
+            raise ValueError("Dla OrderType=Limit podaj Price.")
+        if otype == "Market" and price is not None and price_raw != "":
+            raise ValueError("Price ma sens tylko dla OrderType=Limit.")
+
         return {
             "uic": uic,
             "asset_type": asset,
@@ -173,20 +205,21 @@ class OrderUI(App):
     async def _run_mode(self, place: bool) -> None:
         try:
             vals = self._read_form()
-            payload = build_order_payload(**vals)
+            payload = self.client.build_order_payload(**vals)
             self._show_payload(payload)
         except Exception as e:
             self._set_status(f"Błąd walidacji: {e}")
             return
 
-        path = "/trade/v2/orders" if place else "/trade/v2/orders/preview"
         mode = "PLACE" if place else "PREVIEW"
         self._set_status(f"[{mode}] wysyłanie...")
         try:
-            resp = api_post(path, payload)
+            if place:
+                resp = self.client.place_order(payload)
+            else:
+                resp = self.client.preview_order(payload)
             self._show_response(resp)
-            log_json({"mode": mode, **vals, "payload": payload, "response": resp})
-            self._set_status("Zamówienie złożone")
+            self._set_status("Zamówienie złożone" if place else "Podgląd wykonany")
         except Exception as e:
             self._set_status(f"[{mode}] błąd: {e}")
 
@@ -194,7 +227,7 @@ class OrderUI(App):
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "build":
             try:
-                payload = build_order_payload(**self._read_form())
+                payload = self.client.build_order_payload(**self._read_form())
                 self._show_payload(payload)
                 self._set_status("Payload zbudowany.")
             except Exception as e:
@@ -209,6 +242,10 @@ class OrderUI(App):
             self.query_one("#payload", Log).clear()
             self.query_one("#response", Log).clear()
             self._set_status("Wyczyszczono.")
+            # przywróć stan pola Price wg aktualnego OrderType
+            otype = self.query_one("#otype", Select).value
+            if isinstance(otype, str):
+                self._toggle_price_field(otype)
 
     def action_preview(self) -> None:
         self.run_worker(self._run_mode(place=False), exclusive=True)
