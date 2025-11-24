@@ -1,4 +1,3 @@
-# gpw_quant/strategies/mean_reversion.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,23 +11,30 @@ from strategies.base import StrategyBase
 @dataclass
 class MeanReversionStrategy(StrategyBase):
     """
-    Strategia mean reversion (powrót do średniej).
+    Simple moving-average mean-reversion strategy.
 
     Idea:
-      - jeśli cena jest DUŻO poniżej średniej → kup (LONG), liczymy na odbicie
-      - jeśli cena jest DUŻO powyżej średniej → sprzedaj / shortuj (SHORT), liczymy na korektę
+        - if price is FAR below its moving average → go LONG
+        - if price is FAR above its moving average → go SHORT
 
-    Parametry:
-      window     : długość okna do liczenia średniej i odchylenia (w dniach / świecach)
-      z_entry    : ile odchyleń standardowych od średniej uznajemy za "dużo"
-      col_close  : nazwa kolumny z ceną zamknięcia
-      long_only  : jeśli True, strategia generuje TYLKO sygnały LONG (1 lub 0)
-      short_only : jeśli True, strategia generuje TYLKO sygnały SHORT (-1 lub 0)
+    Parameters
+    ----------
+    window:
+        Rolling window length (in days/bars) used to compute the mean and std.
+    z_entry:
+        How many standard deviations away from the mean we consider "far".
+    col_close:
+        Column name for the closing price.
+    long_only:
+        If True, the strategy generates only LONG signals (1 or 0).
+    short_only:
+        If True, the strategy generates only SHORT signals (-1 or 0).
 
-    Sygnały:
-      signal =  1  → kup (LONG) – cena znacznie poniżej średniej (zscore < -z_entry)
-      signal =  0  → brak pozycji / neutralnie
-      signal = -1  → sprzedaj / short (SHORT) – cena znacznie powyżej średniej (zscore > z_entry)
+    Signals
+    -------
+    signal =  1  → LONG  - price significantly below the moving average
+    signal =  0  → FLAT  - no position
+    signal = -1  → SHORT - price significantly above the moving average
     """
 
     window: int = 20
@@ -59,20 +65,24 @@ class MeanReversionStrategy(StrategyBase):
 
     def generate_signals(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Wejście:
-          df: DataFrame z kolumnami:
-            - 'symbol'
-            - 'date'
-            - col_close (domyślnie 'close')
+        Parameters
+        ----------
+        df:
+            DataFrame with columns:
+                - 'symbol'
+                - 'date'
+                - col_close (default: 'close')
 
-        Wyjście:
-          df z dodatkowymi kolumnami:
-              - 'ma'      : średnia krocząca z 'window' okresów
-              - 'std'     : odchylenie standardowe z 'window' okresów
-              - 'zscore'  : (close - ma) / std
-              - 'signal'  : -1 / 0 / +1  (SHORT / brak / LONG)
-              - 'strategy': nazwa strategii
-              - 'params'  : parametry strategii (string)
+        Returns
+        -------
+        DataFrame
+            Original data plus:
+                - 'ma'      : rolling mean over `window`
+                - 'std'     : rolling standard deviation over `window`
+                - 'zscore'  : (close - ma) / std
+                - 'signal'  : -1 / 0 / +1
+                - 'strategy': strategy name
+                - 'params'  : strategy parameters as string
         """
 
         self._validate_input(df)

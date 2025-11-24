@@ -9,14 +9,14 @@ import pandas as pd
 
 @dataclass
 class StrategyBase(ABC):
-
     """
-    Bazowy interfejs dla strategii generujących sygnały na podstawie danych OHLCV.
+    Base interface for signal-generating strategies.
 
-    Kontrakt:
-      - każda strategia MUSI zaimplementować generate_signals()
-      - generate_signals() bierze df z danymi rynkowymi
-      - zwraca df z kolumną 'signal' (+ ewentualnie dodatkowymi feature'ami)
+    Contract:
+        - every strategy MUST implement generate_signals()
+        - generate_signals() takes a DataFrame with market data
+        - it returns a DataFrame that includes a 'signal' column
+          (and optionally additional features)
     """
 
     name: str = field(init=False)
@@ -25,14 +25,26 @@ class StrategyBase(ABC):
     @abstractmethod
     def generate_signals(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Wejście:
-          df: DataFrame z kolumnami z cenami instrumentu finansowego
-        Wyjście:
-          df z dodatkową kolumną 'signal'
+        Parameters
+        ----------
+        df:
+            DataFrame with OHLCV or other instrument data.
+
+        Returns
+        -------
+        DataFrame
+            Same data with an additional 'signal' column.
         """
         raise NotImplementedError
 
     def _add_meta(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add generic strategy metadata columns.
+
+        Columns added:
+            - 'strategy' : strategy name
+            - 'params'   : string representation of strategy parameters
+        """
         df = df.copy()
         df["strategy"] = self.name
         df["params"] = str(self.params)

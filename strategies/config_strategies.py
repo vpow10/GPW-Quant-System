@@ -18,10 +18,8 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "long_only": False,
         "short_only": False,
     },
-    # itd dla reszty
 }
 
-# Rejestr dostępnych strategii: nazwa → klasa
 STRATEGY_REGISTRY: dict[str, type[StrategyBase]] = {
     "momentum": MomentumStrategy,
     "mean_reversion": MeanReversionStrategy,
