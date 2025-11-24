@@ -137,35 +137,184 @@ class BacktestEngine:
         net_ret_arr: npt.NDArray[np.float64] = np.asarray(
             net_ret_series.to_numpy(), dtype=np.float64
         )
-
         n = int(net_ret_arr.shape[0])
 
-        total_ret = float(np.prod(1.0 + net_ret_arr))
+        final_equity = float(equity_curve["equity"].iloc[-1])
+        growth = final_equity / float(self.cfg.initial_capital)
+
+        total_return = growth - 1.0
         years = n / float(self.cfg.trading_days_per_year)
 
-        ann_ret = (1.0 + total_ret) ** (1.0 / years) - 1.0
+        ann_ret = growth ** (1.0 / years) - 1.0
 
         ann_vol = float(net_ret_arr.std(ddof=0) * np.sqrt(self.cfg.trading_days_per_year))
         sharpe = ann_ret / ann_vol if ann_vol > 0.0 else float("nan")
 
         equity_series = (
-            pd.Series(g["equity"], dtype="float64").replace([np.inf, -np.inf], np.nan).dropna()
+            pd.Series(equity_curve["equity"], dtype="float64")
+            .replace([np.inf, -np.inf], np.nan)
+            .dropna()
         )
-
         equity_arr: npt.NDArray[np.float64] = np.asarray(
             equity_series.to_numpy(), dtype=np.float64
         )
-
         curve = equity_arr / float(self.cfg.initial_capital)
         running_max = np.maximum.accumulate(curve)
         dd = curve / running_max - 1.0
-
         max_dd = float(dd.min().item())
 
         summary = {
             "symbol": symbol,
             "n_days": int(n),
             "initial_capital": float(self.cfg.initial_capital),
+            "final_equity": final_equity,
+            "total_return": float(total_return),
+            "ann_return": float(ann_ret),
+            "ann_vol": float(ann_vol),
+            "sharpe": float(sharpe),
+            "max_drawdown": max_dd,
+        }
+
+        return BacktestResult(
+            equity_curve=equity_curve,
+            daily=daily,
+            summary=summary,
+        )
+
+    def run_portfolio(self, df: pd.DataFrame) -> BacktestResult:
+        """
+        Run a cross-sectional portfolio backtest using signals for many symbols.
+
+        Idea:
+            - for each date, collect signals across all symbols
+            - normalize them into portfolio weights so that:
+                * longs share 0.5 * max_gross_leverage
+                * shorts share 0.5 * max_gross_leverage
+            - use lagged portfolio weights to compute daily returns
+            - apply transaction costs based on turnover in portfolio weights
+
+        Parameters
+        ----------
+        df:
+            DataFrame with at least:
+                - 'symbol'
+                - 'date'
+                - 'ret_1d'
+                - 'signal'
+                - any other columns are passed through untouched
+
+        Returns
+        -------
+        BacktestResult
+            Portfolio equity curve, per-day portfolio stats, summary metrics.
+        """
+        panel = self._prepare_df(df)
+
+        if panel.empty:
+            raise ValueError("BacktestEngine: no data provided for portfolio backtest.")
+
+        panel = panel.sort_values(["date", "symbol"]).reset_index(drop=True)
+
+        cfg = self.cfg
+
+        def _normalize_weights(group: pd.DataFrame) -> pd.DataFrame:
+            longs = group["weight"] > 0.0
+            shorts = group["weight"] < 0.0
+
+            n_long = int(longs.sum())
+            n_short = int(shorts.sum())
+
+            w = pd.Series(0.0, index=group.index, dtype="float64")
+
+            if n_long > 0 and n_short > 0:
+                # symmetric long-short portfolio
+                long_gross = 0.5 * cfg.max_gross_leverage
+                short_gross = 0.5 * cfg.max_gross_leverage
+            elif n_long > 0 and n_short == 0:
+                # only long signals this day
+                long_gross = cfg.max_gross_leverage
+                short_gross = 0.0
+            elif n_short > 0 and n_long == 0:
+                # only short signals this day
+                long_gross = 0.0
+                short_gross = cfg.max_gross_leverage
+            else:
+                # no signals -> stay flat
+                group["port_weight"] = w
+                return group
+
+            if n_long > 0:
+                w.loc[longs] = long_gross / float(n_long)
+            if n_short > 0:
+                w.loc[shorts] = -short_gross / float(n_short)
+
+            group["port_weight"] = w
+            return group
+
+        panel = panel.groupby("date", group_keys=False).apply(_normalize_weights)
+
+        panel["port_weight_lag1"] = panel.groupby("symbol")["port_weight"].shift(1).fillna(0.0)
+
+        cost_per_turnover = (cfg.commission_bps + cfg.slippage_bps) / 10_000.0
+        g = panel
+        g["symbol_gross_ret"] = g["ret_1d"] * g["port_weight_lag1"]
+        g["symbol_turnover"] = (g["port_weight"] - g["port_weight_lag1"]).abs()
+        g["symbol_cost_ret"] = g["symbol_turnover"] * cost_per_turnover
+
+        grouped = panel.groupby("date", as_index=False).agg(
+            gross_ret=("symbol_gross_ret", "sum"),
+            cost_ret=("symbol_cost_ret", "sum"),
+            gross_leverage=("port_weight_lag1", lambda w: float(w.abs().sum())),
+            n_long=("port_weight_lag1", lambda w: int((w > 0.0).sum())),
+            n_short=("port_weight_lag1", lambda w: int((w < 0.0).sum())),
+        )
+
+        grouped["net_ret"] = grouped["gross_ret"] - grouped["cost_ret"]
+        grouped["equity"] = cfg.initial_capital * (1.0 + grouped["net_ret"]).cumprod()
+        grouped["cum_ret"] = grouped["equity"] / cfg.initial_capital - 1.0
+
+        equity_curve = grouped[["date", "equity", "cum_ret"]].copy()
+        daily = grouped.copy()
+
+        # --- metrics ---
+
+        net_ret_series = (
+            pd.Series(daily["net_ret"], dtype="float64")
+            .replace([np.inf, -np.inf], np.nan)
+            .dropna()
+        )
+        if net_ret_series.empty:
+            raise ValueError("BacktestEngine: no valid returns to compute metrics.")
+
+        net_ret_arr: npt.NDArray[np.float64] = np.asarray(
+            net_ret_series.to_numpy(), dtype=np.float64
+        )
+        n = int(net_ret_arr.shape[0])
+
+        total_ret = float(np.prod(1.0 + net_ret_arr))
+        years = n / float(cfg.trading_days_per_year)
+        ann_ret = (1.0 + total_ret) ** (1.0 / years) - 1.0
+
+        ann_vol = float(net_ret_arr.std(ddof=0) * np.sqrt(cfg.trading_days_per_year))
+        sharpe = ann_ret / ann_vol if ann_vol > 0.0 else float("nan")
+
+        equity_series = (
+            pd.Series(daily["equity"], dtype="float64")
+            .replace([np.inf, -np.inf], np.nan)
+            .dropna()
+        )
+        equity_arr: npt.NDArray[np.float64] = np.asarray(
+            equity_series.to_numpy(), dtype=np.float64
+        )
+        curve = equity_arr / float(cfg.initial_capital)
+        running_max = np.maximum.accumulate(curve)
+        dd = curve / running_max - 1.0
+        max_dd = float(dd.min().item())
+
+        summary: dict[str, Any] = {
+            "symbol": "PORTFOLIO",
+            "n_days": int(n),
+            "initial_capital": float(cfg.initial_capital),
             "final_equity": float(equity_curve["equity"].iloc[-1]),
             "total_return": float(equity_curve["cum_ret"].iloc[-1]),
             "ann_return": float(ann_ret),
