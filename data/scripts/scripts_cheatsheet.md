@@ -235,3 +235,20 @@ data/processed/gpw/
   combined.parquet
   _quality_report.csv
 ```
+
+### Moduł Strategies
+
+Parametry Strategii definiujemy w pliku config_startegies.py
+
+Aby odpalić moduł `run_strategies.py`
+
+Dla wszystkich strategii:
+```
+python -m strategies.run_strategies
+```
+lub dla jednej:
+
+Tylko momentum
+`python -m gpw_quant.strategies.run_strategies -s momentum`
+Tylko mean_reversion
+`python -m gpw_quant.strategies.run_strategies -s mean_reversion`
