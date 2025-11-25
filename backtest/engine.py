@@ -267,6 +267,7 @@ class BacktestEngine:
             gross_leverage=("port_weight_lag1", lambda w: float(w.abs().sum())),
             n_long=("port_weight_lag1", lambda w: int((w > 0.0).sum())),
             n_short=("port_weight_lag1", lambda w: int((w < 0.0).sum())),
+            portfolio_turnover=("symbol_turnover", "sum"),
         )
 
         grouped["net_ret"] = grouped["gross_ret"] - grouped["cost_ret"]
@@ -311,6 +312,11 @@ class BacktestEngine:
         dd = curve / running_max - 1.0
         max_dd = float(dd.min().item())
 
+        avg_turnover = float(daily["portfolio_turnover"].mean())
+        avg_gross_leverage = float(daily["gross_leverage"].mean())
+        avg_n_long = float(daily["n_long"].mean())
+        avg_n_short = float(daily["n_short"].mean())
+
         summary: dict[str, Any] = {
             "symbol": "PORTFOLIO",
             "n_days": int(n),
@@ -321,6 +327,10 @@ class BacktestEngine:
             "ann_vol": float(ann_vol),
             "sharpe": float(sharpe),
             "max_drawdown": max_dd,
+            "avg_turnover": avg_turnover,
+            "avg_gross_leverage": avg_gross_leverage,
+            "avg_n_long": avg_n_long,
+            "avg_n_short": avg_n_short,
         }
 
         return BacktestResult(

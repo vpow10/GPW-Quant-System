@@ -16,10 +16,12 @@ BACKTEST_DIR := data/backtests
 # Find all .parquet signal files and derive strategy names from filenames.
 SIGNAL_PARQUETS := $(wildcard $(SIGNAL_DIR)/*.parquet)
 STRATEGIES      := $(basename $(notdir $(SIGNAL_PARQUETS)))
+TOP_STRATEGIES := momentum_252d_longonly momentum_120d_loose momentum_tsmom_120d
 
 # Per-strategy summary files
 FREE_SUMMARIES      := $(addprefix $(BACKTEST_DIR)/,$(addsuffix _portfolio_free.summary.txt,$(STRATEGIES)))
 REALISTIC_SUMMARIES := $(addprefix $(BACKTEST_DIR)/,$(addsuffix _portfolio_realistic.summary.txt,$(STRATEGIES)))
+BENCHMARK := data/processed/gpw/wig20.parquet
 
 # Default target: run all backtests (free + realistic)
 .PHONY: all
@@ -89,3 +91,45 @@ endif
 clean:
 	@echo "Removing backtest summaries in $(BACKTEST_DIR)..."
 	@rm -f $(BACKTEST_DIR)/*_portfolio_*.summary.txt $(BACKTEST_DIR)/ALL_SUMMARIES.txt
+
+.PHONY: stress
+stress:
+	@mkdir -p $(BACKTEST_DIR)/stress
+	@echo "Running stress tests for top strategies..."
+	@for strat in $(TOP_STRATEGIES); do \
+	  for scenario in free realistic; do \
+	    for period in full 2010 2015 2020; do \
+	      if [ "$$period" = "full" ]; then \
+	        START_FLAG=""; \
+	        LABEL="full"; \
+	      else \
+	        START_FLAG="--start-date $$period-01-01"; \
+	        LABEL="since_$$period"; \
+	      fi; \
+	      if [ "$$scenario" = "free" ]; then \
+	        COMM=0; SLIP=0; COST_TAG="free"; \
+	      else \
+	        COMM=5; SLIP=5; COST_TAG="realistic"; \
+	      fi; \
+	      OUT="$(BACKTEST_DIR)/stress/$${strat}_$${LABEL}_$${COST_TAG}.summary.txt"; \
+	      echo ">>> $$strat | $$LABEL | $$COST_TAG"; \
+	      echo "=== Strategy: $$strat | Period: $$LABEL | Costs: $$COST_TAG ===" > $$OUT; \
+	      $(PYTHON) -m backtest.run_backtest \
+	        --signals $(SIGNAL_DIR)/$$strat.parquet \
+	        --mode portfolio \
+	        --initial-capital 100000 \
+	        --commission-bps $$COMM \
+	        --slippage-bps $$SLIP \
+	        $$START_FLAG \
+	        --benchmark $(BENCHMARK) >> $$OUT; \
+	    done; \
+	  done; \
+	done
+
+# Combine all stress-test summaries into a single report
+.PHONY: report_stress
+report_stress:
+	@echo "Combining stress test summaries..."
+	@mkdir -p $(BACKTEST_DIR)/stress
+	@cat $(BACKTEST_DIR)/stress/*.summary.txt > $(BACKTEST_DIR)/stress/ALL_STRESS_SUMMARIES.txt
+	@echo "Saved combined report to $(BACKTEST_DIR)/stress/ALL_STRESS_SUMMARIES.txt"

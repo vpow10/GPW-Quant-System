@@ -21,12 +21,13 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from backtest.engine import BacktestConfig, BacktestEngine
 
 
-def main() -> None:
+def main() -> None:  # noqa: C901
     parser = argparse.ArgumentParser(
         description="Run backtest for a given strategy or for a cross-sectional portfolio."
     )
@@ -81,6 +82,15 @@ def main() -> None:
         default=None,
         help="Optional end date (YYYY-MM-DD). Data after this date is dropped.",
     )
+    parser.add_argument(
+        "--benchmark",
+        type=Path,
+        default=None,
+        help=(
+            "Optional path to benchmark price series (Parquet or CSV) "
+            "with at least columns: 'date', 'close'. Used for comparison."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -117,6 +127,79 @@ def main() -> None:
     else:
         result = engine.run_portfolio(df=df)
         tag = "portfolio"
+
+    if args.benchmark:
+        if not args.benchmark.exists():
+            raise SystemExit(f"Benchmark file not found: {args.benchmark}")
+
+        if args.benchmark.suffix == ".parquet":
+            bm_df = pd.read_parquet(args.benchmark)
+        elif args.benchmark.suffix == ".csv":
+            bm_df = pd.read_csv(args.benchmark)
+        else:
+            raise SystemExit("Benchmark file must be Parquet or CSV format.")
+
+        if "date" not in bm_df.columns or "close" not in bm_df.columns:
+            raise SystemExit("Benchmark file must contain 'date' and 'close' columns.")
+
+        bm_df["date"] = pd.to_datetime(bm_df["date"])
+        bm_df = bm_df.sort_values("date")
+
+        bm_df["bm_ret"] = bm_df["close"].pct_change().fillna(0.0)
+
+        daily = result.daily.copy()
+        daily["date"] = pd.to_datetime(daily["date"])
+
+        merged = pd.merge(
+            daily[["date", "net_ret"]],
+            bm_df[["date", "bm_ret"]],
+            on="date",
+            how="inner",
+        )
+
+        if merged.empty:
+            raise SystemExit("No overlapping dates between backtest and benchmark.")
+
+        merged["active_ret"] = merged["net_ret"] - merged["bm_ret"]
+
+        def _ann_stats(r: pd.Series, trading_days: int) -> tuple[float, float, float]:
+            r = r.replace([np.inf, -np.inf], np.nan).dropna()
+            if r.empty:
+                return float("nan"), float("nan"), float("nan")
+            arr = r.to_numpy(dtype=np.float64)
+            n = len(arr)
+            growth = float(np.prod(1.0 + arr))
+            years = n / float(trading_days)
+            ann_ret = growth ** (1.0 / years) - 1.0
+            ann_vol = float(arr.std(ddof=0) * np.sqrt(trading_days))
+            sharpe = ann_ret / ann_vol if ann_vol > 0.0 else float("nan")
+            return ann_ret, ann_vol, sharpe
+
+        bench_ann_ret, bench_ann_vol, bench_sharpe = _ann_stats(
+            merged["bm_ret"], engine.cfg.trading_days_per_year
+        )
+        active_ann_ret, active_ann_vol, active_sharpe = _ann_stats(
+            merged["active_ret"], engine.cfg.trading_days_per_year
+        )
+
+    result.summary.update(
+        {
+            "bench_ann_return": float(bench_ann_ret),
+            "bench_ann_vol": float(bench_ann_vol),
+            "bench_sharpe": float(bench_sharpe),
+            "active_ann_return": float(active_ann_ret),
+            "active_ann_vol": float(active_ann_vol),
+            "active_sharpe": float(active_sharpe),
+        }
+    )
+
+    daily = pd.merge(
+        daily,
+        merged[["date", "bm_ret", "active_ret"]],
+        on="date",
+        how="left",
+    )
+    result.daily = daily
 
     print("=== Backtest summary ===")  # noqa: T201
     for key, value in result.summary.items():
