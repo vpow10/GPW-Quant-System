@@ -26,3 +26,6 @@ journals/
 data/raw/
 data/processed/
 data/signals/
+
+# backtests
+data/backtests/*.txt
