@@ -9,6 +9,42 @@ from strategies.base import StrategyBase
 
 @dataclass
 class MomentumStrategy(StrategyBase):
+    """
+    Simple time-series momentum / trend-following strategy.
+
+    Idea:
+        - look at the return over the last `lookback` bars
+        - if the return is strongly positive → go LONG
+        - if the return is strongly negative → go SHORT
+        - otherwise stay FLAT
+
+    Parameters
+    ----------
+    lookback:
+        Lookback window (in days/bars) used to compute momentum.
+    entry_long:
+        Threshold for going long; if momentum > entry_long → LONG.
+    entry_short:
+        Threshold for going short; if momentum < entry_short → SHORT.
+    col_close:
+        Column name for the closing price.
+    long_only:
+        If True, the strategy generates only LONG signals (1 or 0).
+    short_only:
+        If True, the strategy generates only SHORT signals (-1 or 0).
+
+    Signals
+    -------
+    signal =  1  → LONG
+    signal =  0  → FLAT
+    signal = -1  → SHORT
+
+    Feature columns
+    ---------------
+    momentum:
+        (close_t / close_{t-lookback}) - 1
+    """
+
     lookback: int = 5
     entry_long: float = 0.05
     entry_short: float = -0.05
@@ -31,25 +67,28 @@ class MomentumStrategy(StrategyBase):
         required = {"symbol", "date", self.col_close}
         missing = [c for c in required if c not in df.columns]
         if missing:
-            raise ValueError(f"MeanReversionStrategy: missing columns: {missing}")
+            raise ValueError(f"MomentumStrategy: missing columns: {missing}")
 
     def generate_signals(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Wejście:
-        df: DataFrame z kolumnami:
-            - 'symbol'
-            - 'date'
-            - col_close (domyślnie 'close')
+        Generate momentum signals for each symbol.
 
-        signal:
-            +1 → sygnał LONG (kupno / zajęcie pozycji długiej)
-            0 → brak pozycji (neutralnie; momentum zbyt słabe)
-            -1 → sygnał SHORT (sprzedaż / zajęcie pozycji krótkiej)
+        Parameters
+        ----------
+        df:
+            DataFrame with columns:
+                - 'symbol'
+                - 'date'
+                - col_close (default: 'close')
 
-        Pozostałe kolumny:
-            - 'momentum' : miara siły trendu (close_t / close_{t-lookback} - 1)
-            - 'strategy' : nazwa strategii
-            - 'params'   : parametry strategii w formie tekstowej
+        Returns
+        -------
+        DataFrame
+            Original data plus:
+                - 'momentum' : time-series momentum
+                - 'signal'   : -1 / 0 / +1
+                - 'strategy' : strategy name
+                - 'params'   : parameters as string
         """
 
         self._validate_input(df)
@@ -60,7 +99,10 @@ class MomentumStrategy(StrategyBase):
         )
 
         df["signal"] = 0
-        df.loc[df["momentum"] > self.entry_long, "signal"] = 1
-        df.loc[df["momentum"] < self.entry_short, "signal"] = -1
+        if not self.short_only:
+            df.loc[df["momentum"] > self.entry_long, "signal"] = 1
+
+        if not self.long_only:
+            df.loc[df["momentum"] < self.entry_short, "signal"] = -1
 
         return self._add_meta(df)
