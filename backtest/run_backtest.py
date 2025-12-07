@@ -128,6 +128,9 @@ def main() -> None:  # noqa: C901
         result = engine.run_portfolio(df=df)
         tag = "portfolio"
 
+    bench_ann_ret = bench_ann_vol = bench_sharpe = np.nan
+    active_ann_ret = active_ann_vol = active_sharpe = np.nan
+
     if args.benchmark:
         if not args.benchmark.exists():
             raise SystemExit(f"Benchmark file not found: {args.benchmark}")
@@ -182,24 +185,24 @@ def main() -> None:  # noqa: C901
             merged["active_ret"], engine.cfg.trading_days_per_year
         )
 
-    result.summary.update(
-        {
-            "bench_ann_return": float(bench_ann_ret),
-            "bench_ann_vol": float(bench_ann_vol),
-            "bench_sharpe": float(bench_sharpe),
-            "active_ann_return": float(active_ann_ret),
-            "active_ann_vol": float(active_ann_vol),
-            "active_sharpe": float(active_sharpe),
-        }
-    )
+        result.summary.update(
+            {
+                "bench_ann_return": float(bench_ann_ret),
+                "bench_ann_vol": float(bench_ann_vol),
+                "bench_sharpe": float(bench_sharpe),
+                "active_ann_return": float(active_ann_ret),
+                "active_ann_vol": float(active_ann_vol),
+                "active_sharpe": float(active_sharpe),
+            }
+        )
 
-    daily = pd.merge(
-        daily,
-        merged[["date", "bm_ret", "active_ret"]],
-        on="date",
-        how="left",
-    )
-    result.daily = daily
+        daily = pd.merge(
+            daily,
+            merged[["date", "bm_ret", "active_ret"]],
+            on="date",
+            how="left",
+        )
+        result.daily = daily
 
     print("=== Backtest summary ===")  # noqa: T201
     for key, value in result.summary.items():

@@ -3,6 +3,7 @@ from typing import Any
 from strategies.base import StrategyBase
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.momentum import MomentumStrategy
+from strategies.lstm_strategy import LSTMStrategy
 
 # best strategies marked with S/A tier comments, rest honestly garbage
 STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
@@ -11,6 +12,12 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "entry_long": 0.05,
         "entry_short": -0.05,
         "col_close": "close",
+    },
+    "lstm": {
+        "models_dir": "./models",
+        "threshold": 0.003,
+        "smoothing_window": 3,
+        "exit_threshold": -0.002,
     },
     "mean_reversion": {
         "window": 20,
@@ -111,6 +118,7 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
 STRATEGY_REGISTRY: dict[str, type[StrategyBase]] = {
     "momentum": MomentumStrategy,
     "mean_reversion": MeanReversionStrategy,
+    "lstm": LSTMStrategy,
     "momentum_tsmom_20d": MomentumStrategy,
     "momentum_tsmom_60d": MomentumStrategy,
     "momentum_tsmom_120d": MomentumStrategy,
