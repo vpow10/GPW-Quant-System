@@ -1,0 +1,92 @@
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : False
+[auth] Access token refreshed.
+Cash Available: 1000000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 95000.00 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  198  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  225  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Order POST failed.
+  url         : https://gateway.saxobank.com/sim/openapi/trade/v2/orders
+  status      : 429
+  content-type: application/json; charset=utf-8
+  request-id  : None
+  response    : {'ErrorCode': 'RateLimitExceeded', 'Message': 'Rate limit exceeded!'}
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : True
+Cash Available: 1000000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 95000.00 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  198  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  225  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+--- Executing Orders ---
+Executing Buy 198 x Asseco...
+  Result: {'OrderId': '5036560712'}
+Executing Buy 225 x KGHM...
+Order POST failed.
+  url         : https://gateway.saxobank.com/sim/openapi/trade/v2/orders
+  status      : 429
+  content-type: application/json; charset=utf-8
+  request-id  : None
+  response    : {'ErrorCode': 'RateLimitExceeded', 'Message': 'Rate limit exceeded!'}
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : True
+Cash Available: 1000000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 95000.00 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  198  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  225  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+--- Executing Orders ---
+Executing Buy 198 x Asseco...
+  Result: {'OrderId': '5036560714'}
+Executing Buy 225 x KGHM...
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : True
+[auth] Access token refreshed.
+Cash Available: 1000000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 95000.00 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  198  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  225  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+--- Executing Orders ---
+Executing Buy 198 x Asseco...
+  Result: {'OrderId': '5036560715'}
+Executing Buy 225 x KGHM...
+  Result: {'OrderId': '5036560716'}

@@ -78,13 +78,16 @@ class LiveTrader:
         # 4. Get the LAST signal (for "tomorrow")
         last_row = df_sig.iloc[-1]
 
-        return {
-            "date": str(last_row["date"]),
-            "signal": int(last_row["signal"]),
-            "close": float(last_row["close"]),
-            "strategy": strategy_name,
-            "params": str(strategy.params),
-        }
+        # Convert last_row to dict to include all metrics (momentum, z-score, etc.)
+        result = last_row.to_dict()
+        # Ensure primitive types for JSON/usage
+        result["date"] = str(result["date"])
+        result["signal"] = int(result["signal"])
+        result["close"] = float(result["close"])
+        result["strategy"] = strategy_name
+        result["params"] = str(strategy.params)
+
+        return result
 
     def execute_trade(
         self,
