@@ -1,9 +1,9 @@
 from typing import Any
 
 from strategies.base import StrategyBase
+from strategies.lstm_strategy import LSTMStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.momentum import MomentumStrategy
-from strategies.lstm_strategy import LSTMStrategy
 
 # best strategies marked with S/A tier comments, rest honestly garbage
 STRATEGY_CONFIG: dict[str, dict[str, Any]] = {

@@ -1,6 +1,5 @@
 import json
-import os
-from typing import Generator, Tuple, Any
+from typing import Any, Generator, Tuple
 
 import numpy as np
 import polars as pl
@@ -87,34 +86,17 @@ class TimeSeriesScaler:
 # ========= DATA HELPERS =========
 
 
-def create_sequences(
-    data: np.ndarray, seq_len: int
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Create sequences for LSTM.
-    X: (N, seq_len, features)
-    y: (N, 1) - using feature index 0 as target if only 1 feature,
-                BUT this logic essentially assumes we are predicting something aligned.
-                Actually, the training script prepares X and y separately usually.
-    """
-    # NOTE: This generic function might be less useful if X involves multiple lags.
-    # In this specific strategy, the features are ALREADY lagged in the DataFrame.
-    # So we essentially just need to reshape [batch, features] -> [batch, seq_len, 1]
-    # IF the input is univariate lagged columns.
-    pass
-
-
 def prepare_lstm_data(
-    df: pl.DataFrame |  Any, 
-    features: list[str], 
-    target: str = None,
+    df: pl.DataFrame | Any,
+    features: list[str],
+    target: str = "",
     seq_len: int = 1,
-    input_size: int = 1
+    input_size: int = 1,
 ):
     """
     Reshapes the flat feature columns into LSTM format.
     Assumes features are already lagged columns.
-    
+
     Returns:
         X: tensor (N, seq_len, input_size)
         y: tensor (N, 1) or None
@@ -123,9 +105,9 @@ def prepare_lstm_data(
     # OR that we want to treat each feature as a separate channel?
     # Original code: X_train_flat.view(-1, SEQ_LEN, INPUT_SIZE)
     # This implies features was [lag1, lag2, lag3, lag4] -> seq_len=4, input=1
-    
+
     # We will stick to that logic for now, but explicit is better.
-    
+
     # Convert to numpy
     if hasattr(df, "to_numpy"):
         X_numpy = df[features].to_numpy()
@@ -150,7 +132,7 @@ def prepare_lstm_data(
     # Reshape
     # X_numpy is (N, total_features)
     # We want (N, seq_len, input_size) where seq_len * input_size = total_features
-    
+
     # Validate
     if X_numpy.shape[1] != seq_len * input_size:
         raise ValueError(
@@ -159,7 +141,7 @@ def prepare_lstm_data(
         )
 
     X_tensor = torch.tensor(X_numpy, dtype=torch.float32).view(-1, seq_len, input_size)
-    
+
     y_tensor = None
     if y_numpy is not None:
         y_tensor = torch.tensor(y_numpy, dtype=torch.float32).reshape(-1, 1)
@@ -172,8 +154,8 @@ def create_batches(
 ) -> Generator[Tuple[torch.Tensor, torch.Tensor], None, None]:
     """Yields batches of X and y."""
     n_samples = len(X)
-    indices = torch.randperm(n_samples) # Shuffle for training
-    
+    indices = torch.randperm(n_samples)  # Shuffle for training
+
     for i in range(0, n_samples, batch_size):
         batch_indices = indices[i : i + batch_size]
         yield X[batch_indices], y[batch_indices]

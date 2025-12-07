@@ -292,9 +292,10 @@ class BacktestEngine:
         )
         n = int(net_ret_arr.shape[0])
 
-        total_ret = float(np.prod(1.0 + net_ret_arr))
+        growth = float(np.prod(1.0 + net_ret_arr))
         years = n / float(cfg.trading_days_per_year)
-        ann_ret = (1.0 + total_ret) ** (1.0 / years) - 1.0
+        ann_ret = growth ** (1.0 / years) - 1.0
+        total_ret = growth - 1.0
 
         ann_vol = float(net_ret_arr.std(ddof=0) * np.sqrt(cfg.trading_days_per_year))
         sharpe = ann_ret / ann_vol if ann_vol > 0.0 else float("nan")
@@ -322,7 +323,7 @@ class BacktestEngine:
             "n_days": int(n),
             "initial_capital": float(cfg.initial_capital),
             "final_equity": float(equity_curve["equity"].iloc[-1]),
-            "total_return": float(equity_curve["cum_ret"].iloc[-1]),
+            "total_return": float(total_ret),
             "ann_return": float(ann_ret),
             "ann_vol": float(ann_vol),
             "sharpe": float(sharpe),
