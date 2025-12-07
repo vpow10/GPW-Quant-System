@@ -20,6 +20,7 @@ repos:
         entry: ruff
         language: system
         types: [python]
+        files: \.py$
         args: ["check", "."]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -34,6 +35,7 @@ repos:
           - textual>=0.82     # provides textual.app/containers/widgets
         args:
           - --python-version=3.12
+          - --config-file=mypy.ini
         files: \.py$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks

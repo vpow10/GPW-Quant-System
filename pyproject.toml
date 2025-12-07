@@ -9,4 +9,10 @@ known_first_party = ["gpw-quant-system"]
 
 [tool.ruff]
 line-length = 98
+exclude = ["**/*.ipynb"]
 select = ["E", "F", "W", "C", "I", "T"]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "T201",  # print found (used in scripts)
+    "C901",  # complexity (handled separately)
+]

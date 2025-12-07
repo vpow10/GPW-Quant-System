@@ -16,6 +16,9 @@ data/scripts/.secrets/
 # MyPy
 .mypy_cache/
 
+# Ruff
+.ruff_cache/
+
 # IDEs
 .vscode/
 
@@ -30,3 +33,4 @@ data/signals/
 # backtests
 data/backtests/*.txt
 data/backtests/stress/
+data/backtests/strategies/
