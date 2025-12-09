@@ -143,3 +143,13 @@ class SaxoClient:
         resp = self.api_post("/trade/v2/orders", payload)
         self.log_json({"request": payload, "response": resp})
         return resp
+
+    def get_net_positions(self) -> dict[str, Any]:
+        """Pobiera otwarte pozycje (NetPositions)."""
+        url = f"{self.openapi_base}/port/v1/netpositions/me"
+        with httpx.Client(timeout=self.timeout) as c:
+            r = c.get(url, headers=self._headers())
+            if r.status_code == 200:
+                return r.json()
+            # Jeśli błąd, zwracamy strukturę błędu
+            return {"error": f"HTTP {r.status_code}", "raw": r.text}

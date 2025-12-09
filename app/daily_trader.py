@@ -57,41 +57,98 @@ async def main():
         action="store_true",
         help="If set, REAL orders will be placed. Otherwise runs in dry-run mode.",
     )
+    parser.add_argument(
+        "--max-capital",
+        type=float,
+        default=500000.0,
+        help="Maximum capital (USD) to consider for trading. Defaults to 500k.",
+    )
+    parser.add_argument(
+        "--max-daily-spend",
+        type=float,
+        default=50000.0,
+        help="Maximum amount (USD) to spend on new entries per day. Defaults to 50k.",
+    )
+    parser.add_argument(
+        "--fx-rate",
+        type=float,
+        default=4.0,
+        help="USD to PLN exchange rate for position sizing. Defaults to 4.0.",
+    )
     args = parser.parse_args()
 
-    print("--- Starting Daily Trader ---")
-    print(f"Strategy     : {args.strategy}")
-    print(f"Auto Allocate: {args.auto_allocate}")
-    print(f"Long Only    : {args.long_only}")
-    print(f"Execute      : {args.execute}")
+    print(f"Max Capital    : ${args.max_capital:,.2f}")
+    print(f"Max Daily Spend: ${args.max_daily_spend:,.2f}")
+    print(f"FX Rate        : {args.fx_rate}")
 
     trader = LiveTrader()
 
-    # Get wallet balance if allocating
+    # 1. Fetch Wallet & Positions
+    # We need both to determine Total Equity and specific holdings for exits.
     total_cash = 0.0
-    if args.auto_allocate:
+    total_value = 0.0  # Net Equity to compare against Max Capital
+    positions = []
+
+    if args.auto_allocate or args.execute:
+        # Fetch Wallet
         w_res = trader.get_wallet()
-        # Saxo response can be a list under "Data" or a direct dict depending on endpoint version/sim
         if "Data" in w_res and isinstance(w_res["Data"], list) and len(w_res["Data"]) > 0:
-            total_cash = float(w_res["Data"][0].get("CashAvailableForTrading", 0.0))
+            data = w_res["Data"][0]
+            total_cash = float(data.get("CashAvailableForTrading", 0.0))
+            total_value = float(data.get("TotalValue", 0.0))  # NetEquity
         elif "CashAvailableForTrading" in w_res:
             total_cash = float(w_res["CashAvailableForTrading"])
+            # Fallback if structure is flat sim
+            total_value = float(w_res.get("TotalValue", total_cash))
         elif "MarginAvailableForTrading" in w_res:
-            # Fallback if CashAvailableForTrading missing but Margin available
             total_cash = float(w_res["MarginAvailableForTrading"])
+            total_value = float(w_res.get("TotalValue", total_cash))
         elif "CashBalance" in w_res:
             total_cash = float(w_res["CashBalance"])
+            # Very old or basic struct
+            total_value = total_cash
         else:
             print(f"[!] Could not fetch wallet balance: {w_res}")
             return
-        print(f"Cash Available: {total_cash:.2f}")
+
+        # Fetch Positions
+        try:
+            positions = trader.get_positions()
+        except Exception as e:
+            print(f"[!] Error fetching positions: {e}")
+            positions = []
+
+        # If TotalValue wasn't found in wallet (e.g. 0.0), try to sum it up manually
+        if total_value == 0.0 and total_cash > 0:
+            pos_val = sum(p.get("market_value", 0.0) for p in positions)
+            total_value = total_cash + pos_val
+
+        # Enforce Max Capital Limit (Global Portfolio Limit)
+        # Remaining Budget = MaxCapital - CurrentTotalValue
+        global_remaining = args.max_capital - total_value
+
+        print(
+            f"Portfolio Value: ${total_value:,.2f} (Cash: ${total_cash:,.2f} + Pos: ~${(total_value-total_cash):,.2f})"
+        )
+        print(f"Global Limit   : ${args.max_capital:,.2f}")
+        print(f"Global Remain  : ${global_remaining:,.2f}")
+
+        if global_remaining <= 0:
+            print("[!] Portfolio Value exceeds Limit. No new entries allowed.")
+            usable_cash_for_entries = 0.0
+        else:
+            # We can use cash up to global_remaining, but limited by actual cash available
+            usable_cash_for_entries = min(total_cash, global_remaining)
+    else:
+        # If not allocating/executing, simpler default
+        usable_cash_for_entries = 0.0
 
     symbols = trader.list_symbols()
     print(f"Found {len(symbols)} instruments to analyze.")
 
     candidates = []
 
-    # 1. Analyze all symbols
+    # 2. Analyze all symbols
     for name, uic in symbols:
         try:
             res = trader.generate_signal(args.strategy, uic)
@@ -103,7 +160,6 @@ async def main():
             continue
 
         # Logic for Signal Change
-        # Signals: 1 (Long), 0 (Flat), -1 (Short)
         curr = res.get("signal", 0)
         prev = res.get("prev_signal", 0)
 
@@ -111,58 +167,38 @@ async def main():
         if curr == prev:
             continue
 
-        # If Long Only:
-        # - Ignore entering Short (0 -> -1).
-        # - Ignore switching Long to Short (1 -> -1).
-        #   - Actually, 1 -> -1 means Close Long AND Open Short.
-        #   - If Long Only, we should just Close Long (1 -> 0).
-        # - Allow 0 -> 1 (Open Long).
-        # - Allow -1 -> 1 (Close Short, Open Long). But if we were Long Only, we shouldn't be Short.
-        #   - If we assume clean state, we just treat 1 as Buy.
-
         if args.long_only:
-            # If target is Short (-1), we treat it as Flat (0) for safety/compatibility?
-            # Or effectively ignore the "Short" part.
-            # Case 0 -> -1: Ignore.
-            # Case 1 -> -1: Should be Sell (Close Long). Treat new state as 0?
+            # Long Only Logic
             if curr == -1:
-                # We do not want to hold Short.
                 # If we were Long (1), we should Sell to 0.
-                # If we were 0, we stay 0.
-                if prev == 1:
-                    # Effectively treating transition as 1 -> 0
-                    action = "SELL"  # Close Long
-                else:
-                    continue  # 0 -> -1 or -1 -> -1 (impossible here due to check above)
-            elif curr == 1:
-                # 0 -> 1 or -1 -> 1. Valid Buy.
-                action = "BUY"
-            elif curr == 0:
-                # 1 -> 0. Valid Sell (Close).
-                # -1 -> 0. Close Short... if we had one.
                 if prev == 1:
                     action = "SELL"
                 else:
-                    continue  # -1 -> 0, Closing short. Not relevant for entry calculation usually?
-                    # But wait, if we are closing, we need to execute a trade.
+                    continue
+            elif curr == 1:
+                action = "BUY"
+            elif curr == 0:
+                if prev == 1:
+                    action = "SELL"
+                else:
+                    continue
         else:
-            # Long and Short allowed.
+            # Long/Short Logic
             if curr == 1:
                 action = "BUY"
             elif curr == -1:
                 action = "SHORT"
             else:  # curr == 0
-                # Closing whatever we had.
                 if prev == 1:
-                    action = "SELL"  # Close Long
+                    action = "SELL"
                 elif prev == -1:
-                    action = "COVER"  # Close Short (Buy back)
+                    action = "COVER"
                 else:
                     continue
 
         res["uic"] = uic
         res["name"] = name
-        res["action"] = action  # BUY, SELL, SHORT, COVER
+        res["action"] = action
         candidates.append(res)
 
     print(f"\nTotal Active Signals (Changes): {len(candidates)}")
@@ -171,52 +207,59 @@ async def main():
         print("No signal changes today. No trades.")
         return
 
-    # 2. Allocation Logic
-    # We only allocate cash for *Entries* (BUY or SHORT).
-    # For *Exits* (SELL or COVER), we close the position.
-    # Since we don't know the exact position size held, we have a dilemma.
-    # User said "maximize profit... decide amounts".
-    # Assumption for Exits:
-    # - If Dry Run: Just show "Close Position".
-    # - If Execute: We need to know how much to sell.
-    # - Engine execute_trade doesn't have "Close All".
-    # - Solution: We will effectively SKIP sizing logic for Exits and just log a warning
-    #   or assume a default quantity if not tracking state.
-    #   OR, we rely on `args.amount` for exits if state unknown.
-    #   BUT, for Entries, we use "Smart Allocation".
-
+    # 3. Allocation & Sizing logic
     final_orders = []
-    # List of entries to calculate weights for
+
+    # Map UIC to held quantity for Exits
+    # (Assuming single account, summing if multiple positions for same uic?? Saxo netpositions is 1 per uic usually)
+    held_map = {p["uic"]: p["qty"] for p in positions}
+
     entries = [c for c in candidates if c["action"] in ("BUY", "SHORT")]
     exits = [c for c in candidates if c["action"] in ("SELL", "COVER")]
 
-    # --- Process Entries (Allocate Cash) ---
+    # --- Process Entries ---
     def get_rank_score(item):
         val = item.get(args.sort_by)
         if val is None:
             return 0.0
         return abs(float(val))
 
-    if args.auto_allocate and entries:
+    if args.auto_allocate and entries and usable_cash_for_entries > 0:
         valid_entries = [c for c in entries if c.get(args.sort_by) is not None]
         total_score = sum(get_rank_score(c) for c in valid_entries)
 
         if total_score > 0:
-            usable_cash = total_cash * args.allocation_pct * 0.95
+            # Base Alloc Calculation
+            # Allocation % applies to Total Cash available... or Limit?
+            # Usually Alloc % is "Use 10% of my cash".
+            # So base = total_cash * alloc_pct
+            # But capped by global_remaining and daily_spend.
+
+            base_alloc_amt = total_cash * args.allocation_pct
+
+            # Cap 1: Global Limit Remaining
+            capped_1 = min(base_alloc_amt, global_remaining)
+
+            # Cap 2: Daily Spend Limit
+            capped_2 = min(capped_1, args.max_daily_spend)
+
+            final_daily_alloc = capped_2 * 0.95  # Safety buffer
+
             print(
-                f"\nAllocating {usable_cash:.2f} (Factor: {args.allocation_pct:.2f}) across {len(valid_entries)} new entries."
+                f"\nAllocating ${final_daily_alloc:,.2f} (Base: ${base_alloc_amt:,.2f}, GlobalRem: ${global_remaining:,.2f}, DailyCap: ${args.max_daily_spend:,.2f})"
             )
 
             for pick in valid_entries:
                 score = get_rank_score(pick)
                 weight = score / total_score
-                allocated_amt = usable_cash * weight
-                price = pick["close"]
-                qty = int(allocated_amt / price)
+                allocated_usd = final_daily_alloc * weight
 
-                # Side map for execute_trade
-                # BUY -> 'Buy'
-                # SHORT -> 'Sell' (Opening Short)
+                # Convert USD -> PLN
+                allocated_pln = allocated_usd * args.fx_rate
+
+                price = pick["close"]
+                qty = int(allocated_pln / price)
+
                 side = "Buy" if pick["action"] == "BUY" else "Sell"
 
                 if qty >= 1:
@@ -227,40 +270,70 @@ async def main():
                             "side": side,
                             "amount": qty,
                             "price": price,
-                            "reason": f"Entry {pick['action']} (w={weight:.1%})",
+                            "reason": f"Entry {pick['action']} (w={weight:.1%}) [${allocated_usd:.0f} -> {allocated_pln:.0f} PLN]",
                         }
                     )
-    else:
-        # Fixed amount for entries
-        for pick in entries:
-            side = "Buy" if pick["action"] == "BUY" else "Sell"
+    elif entries:
+        # Fallback if no cash or auto-alloc off
+        if usable_cash_for_entries <= 0 and args.auto_allocate:
+            print("Skipping Entries: No Budget Available (Portfolio Limit or No Cash).")
+        else:
+            # Fixed amount mode
+            for pick in entries:
+                side = "Buy" if pick["action"] == "BUY" else "Sell"
+                final_orders.append(
+                    {
+                        "uic": pick["uic"],
+                        "name": pick["name"],
+                        "side": side,
+                        "amount": args.amount,
+                        "price": pick["close"],
+                        "reason": f"Entry {pick['action']} (Fixed - Check Limits Manually!)",
+                    }
+                )
+
+    # --- Process Exits (Smart Sizing) ---
+    for pick in exits:
+        side = "Sell" if pick["action"] == "SELL" else "Buy"
+        uic = pick["uic"]
+
+        # Check holdings
+        held_qty = held_map.get(uic, 0)
+
+        if held_qty > 0:
+            qty_to_close = int(held_qty)  # Close full position logic for now?
+            # Usually strict reversal means closing everything.
             final_orders.append(
                 {
-                    "uic": pick["uic"],
+                    "uic": uic,
                     "name": pick["name"],
                     "side": side,
-                    "amount": args.amount,
+                    "amount": qty_to_close,
                     "price": pick["close"],
-                    "reason": f"Entry {pick['action']} (Fixed)",
+                    "reason": f"Exit {pick['action']} (Closing Held Position: {held_qty})",
                 }
             )
+        else:
+            # If we don't hold it, there's nothing to close.
+            # Unless we are Shorting (COVER) and we didn't track it properly?
+            # Safe bet: if 0 held, ignore or log.
+            # But for testing, if we don't have positions data (e.g. error), we might fallback
+            if not positions and not args.execute:
+                # Dry run without fetching positions? Fallback
+                final_orders.append(
+                    {
+                        "uic": uic,
+                        "name": pick["name"],
+                        "side": side,
+                        "amount": args.amount,
+                        "price": pick["close"],
+                        "reason": f"Exit {pick['action']} (No Pos Data -> Default {args.amount})",
+                    }
+                )
+            else:
+                print(f"Skipping Exit {pick['name']}: No positions held.")
 
-    # --- Process Exits ---
-    # Since we don't know position size, we default to args.amount and warn.
-    for pick in exits:
-        side = "Sell" if pick["action"] == "SELL" else "Buy"  # SELL closes Long, Buy closes Short
-        final_orders.append(
-            {
-                "uic": pick["uic"],
-                "name": pick["name"],
-                "side": side,
-                "amount": args.amount,  # Fallback
-                "price": pick["close"],
-                "reason": f"Exit {pick['action']} (Unknown Size -> Default {args.amount})",
-            }
-        )
-
-    # 3. Execution
+    # 4. Execution
     print(f"\n--- Planned Orders ({len(final_orders)}) ---")
     for order in final_orders:
         print(

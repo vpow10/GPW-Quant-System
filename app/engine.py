@@ -110,3 +110,28 @@ class LiveTrader:
             price=price,
         )
         return self.client.place_order(payload)
+
+    def get_positions(self) -> list[dict[str, Any]]:
+        """
+        Returns a list of open positions.
+        Normalized to: [{'uic': 123, 'qty': 100, 'price': 12.5, 'id': '...'}, ...]
+        """
+        raw = self.client.get_net_positions()
+        if "Data" not in raw:
+            return []
+
+        # Parse Saxo NetPositions
+        # Usually list under "Data"
+        positions = []
+        for item in raw["Data"]:
+            # NetPositionBase has 'Uic', 'Amount', 'NetPositionId'
+            # Sim vs Live consistency varies, but Uic/Amount usually present.
+            p = {
+                "uic": item.get("Uic"),
+                "qty": item.get("Amount", 0),
+                "id": item.get("NetPositionId"),
+                "price": item.get("CurrentPrice", 0.0),
+                "market_value": item.get("MarketValue", 0.0),  # E.g. Amount * CurrentPrice
+            }
+            positions.append(p)
+        return positions

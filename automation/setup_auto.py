@@ -65,6 +65,9 @@ class SetupApp(App):
         self.default_alloc = "0.1"
         self.default_long = True
         self.default_exec = False
+        self.default_max_cap = "500000"
+        self.default_daily_spend = "50000"
+        self.default_fx = "4.0"
         self.load_existing_config()
 
     def load_existing_config(self):
@@ -82,6 +85,12 @@ class SetupApp(App):
                                 self.default_long = val == "true"
                             elif key == "TRADER_EXECUTE":
                                 self.default_exec = val == "true"
+                            elif key == "TRADER_MAX_CAPITAL":
+                                self.default_max_cap = val
+                            elif key == "TRADER_MAX_DAILY_SPEND":
+                                self.default_daily_spend = val
+                            elif key == "TRADER_FX_RATE":
+                                self.default_fx = val
             except Exception:
                 pass
 
@@ -99,6 +108,18 @@ class SetupApp(App):
             with Horizontal(classes="row"):
                 yield Label("Risk Allocation (0.0-1.0):")
                 yield Input(value=self.default_alloc, id="alloc")
+
+            with Horizontal(classes="row"):
+                yield Label("Max Capital (USD):")
+                yield Input(value=self.default_max_cap, id="max_cap")
+
+            with Horizontal(classes="row"):
+                yield Label("Max Daily Spend (USD):")
+                yield Input(value=self.default_daily_spend, id="daily_spend")
+
+            with Horizontal(classes="row"):
+                yield Label("USD/PLN FX Rate:")
+                yield Input(value=self.default_fx, id="fx_rate")
 
             with Horizontal(classes="row"):
                 yield Label("Long Only:")
@@ -120,6 +141,11 @@ class SetupApp(App):
     def save_config(self):
         strat = self.query_one("#strat", Select).value
         alloc = self.query_one("#alloc", Input).value
+        max_cap = self.query_one("#max_cap", Input).value
+        daily_spend = self.query_one("#daily_spend", Input).value
+        fx_rate = self.query_one("#fx_rate", Input).value
+
+        # Simple validation/sanitization could go here
         try:
             float(alloc)
         except ValueError:
@@ -133,6 +159,9 @@ class SetupApp(App):
             f"TRADER_ALLOCATION={alloc}",
             f"TRADER_LONG_ONLY={'true' if is_long else 'false'}",
             f"TRADER_EXECUTE={'true' if is_exec else 'false'}",
+            f"TRADER_MAX_CAPITAL={max_cap}",
+            f"TRADER_MAX_DAILY_SPEND={daily_spend}",
+            f"TRADER_FX_RATE={fx_rate}",
         ]
 
         with open(CONFIG_PATH, "w") as f:
