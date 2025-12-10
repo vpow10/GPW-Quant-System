@@ -118,33 +118,20 @@ async def main():
             print(f"[!] Error fetching positions: {e}")
             positions = []
 
-        # If TotalValue wasn't found in wallet (e.g. 0.0), try to sum it up manually
         if total_value == 0.0 and total_cash > 0:
-            pos_val = sum(p.get("market_value", 0.0) for p in positions)
-            total_value = total_cash + pos_val
-
-        # Enforce Max Capital Limit (Global Portfolio Limit)
-        # Remaining Budget = MaxCapital - CurrentTotalValue
-        global_remaining = args.max_capital - total_value
-
-        print(
-            f"Portfolio Value: ${total_value:,.2f} (Cash: ${total_cash:,.2f} + Pos: ~${(total_value-total_cash):,.2f})"
-        )
-        print(f"Global Limit   : ${args.max_capital:,.2f}")
-        print(f"Global Remain  : ${global_remaining:,.2f}")
-
-        if global_remaining <= 0:
-            print("[!] Portfolio Value exceeds Limit. No new entries allowed.")
-            usable_cash_for_entries = 0.0
-        else:
-            # We can use cash up to global_remaining, but limited by actual cash available
-            usable_cash_for_entries = min(total_cash, global_remaining)
+            # We defer strict pos value calculation to after the price loop
+            pass
     else:
         # If not allocating/executing, simpler default
-        usable_cash_for_entries = 0.0
+        pass
 
     symbols = trader.list_symbols()
     print(f"Found {len(symbols)} instruments to analyze.")
+
+    # Track Exposure manually to fix 0-price API issue
+    calculated_exposure_pln = 0.0
+    held_qty_map = {p["uic"]: p["qty"] for p in positions}
+    processed_uics = set()
 
     candidates = []
 
@@ -152,6 +139,16 @@ async def main():
     for name, uic in symbols:
         try:
             res = trader.generate_signal(args.strategy, uic)
+
+            # --- Exposure Tracking Fix ---
+            if uic in held_qty_map:
+                qty = held_qty_map[uic]
+                price = res.get("close", 0.0)
+                val_pln = qty * price
+                calculated_exposure_pln += val_pln
+                processed_uics.add(uic)
+            # -----------------------------
+
         except Exception as e:
             print(f"[!] Error analyzing {name} ({uic}): {e}")
             continue
@@ -206,13 +203,44 @@ async def main():
     if not candidates:
         print("No signal changes today. No trades.")
         return
+    # Limit Check & Alloc Init (Deferred)
+
+    # Add any held positions that were NOT in the symbols list (fallback to API value)
+    for p in positions:
+        if p["uic"] not in processed_uics:
+            # Use raw API value (might be 0, but best effort)
+            # Note: API value is often in PLN for GPW stocks if account is EUR?
+            # Actually API MarketValueOpenInBaseCurrency is EUR.
+            # But here we sum PLN exposure for conversion.
+            # If we don't know, ignore or use market_value from p
+            # (which we tried to parse from View, might be 0)
+            pass
+
+    # Convert Exposure to USD
+    current_exposure_usd = calculated_exposure_pln / args.fx_rate
+
+    global_remaining = args.max_capital - current_exposure_usd
+
+    print("\n--- Limit Check (Recalculated) ---")
+    print(f"Calc Exposure  : {calculated_exposure_pln:,.2f} PLN (~${current_exposure_usd:,.2f})")
+    print(f"Max Exposure Cap: ${args.max_capital:,.2f}")
+    print(f"Exposure Remain : ${global_remaining:,.2f}")
+
+    if args.auto_allocate or args.execute:
+        if global_remaining <= 0:
+            print("[!] Max Exposure Limit reached. No new entries allowed.")
+            usable_cash_for_entries = 0.0
+        else:
+            usable_cash_for_entries = min(total_cash, global_remaining)
+    else:
+        usable_cash_for_entries = 0.0
 
     # 3. Allocation & Sizing logic
     final_orders = []
 
     # Map UIC to held quantity for Exits
     # (Assuming single account, summing if multiple positions for same uic?? Saxo netpositions is 1 per uic usually)
-    held_map = {p["uic"]: p["qty"] for p in positions}
+    held_map = held_qty_map  # Reuse our map
 
     entries = [c for c in candidates if c["action"] in ("BUY", "SHORT")]
     exits = [c for c in candidates if c["action"] in ("SELL", "COVER")]

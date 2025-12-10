@@ -125,13 +125,32 @@ class LiveTrader:
         positions = []
         for item in raw["Data"]:
             # NetPositionBase has 'Uic', 'Amount', 'NetPositionId'
-            # Sim vs Live consistency varies, but Uic/Amount usually present.
-            p = {
-                "uic": item.get("Uic"),
-                "qty": item.get("Amount", 0),
-                "id": item.get("NetPositionId"),
-                "price": item.get("CurrentPrice", 0.0),
-                "market_value": item.get("MarketValue", 0.0),  # E.g. Amount * CurrentPrice
-            }
+            # Sim vs Live consistency varies. Check for nested structure first.
+            if "NetPositionBase" in item:
+                base = item["NetPositionBase"]
+                view = item.get("NetPositionView", {})
+
+                uic = base.get("Uic")
+                qty = base.get("Amount", 0)
+                # If Amount is 0, check AmountLong/Short? Usually Amount is sufficient.
+
+                p = {
+                    "uic": uic,
+                    "qty": qty,
+                    "id": item.get("NetPositionId"),
+                    "price": view.get("CurrentPrice", 0.0),
+                    # MarketValueOpen can be unreliable (negative?) if market closed.
+                    # We will rely on re-calculating value in the trader script using latest data.
+                    "market_value": view.get("MarketValueOpen", 0.0),
+                }
+            else:
+                # Flat structure (fallback)
+                p = {
+                    "uic": item.get("Uic"),
+                    "qty": item.get("Amount", 0),
+                    "id": item.get("NetPositionId"),
+                    "price": item.get("CurrentPrice", 0.0),
+                    "market_value": item.get("MarketValue", 0.0),
+                }
             positions.append(p)
         return positions
