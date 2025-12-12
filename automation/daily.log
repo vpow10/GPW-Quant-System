@@ -289,3 +289,58 @@ Sell 3199 x Tauron     @ 8.70 | Entry SHORT (w=14.7%) [$6959 -> 27837 PLN]
 Executing Buy 139 x Asseco...
   Result: {'OrderId': '5036584721'}
 Executing Sell 8189 x GTC...
+Order POST failed.
+  url         : https://gateway.saxobank.com/sim/openapi/trade/v2/orders
+  status      : 400
+  content-type: application/json; charset=utf-8
+  request-id  : None
+  response    : {'ErrorInfo': {'ErrorCode': 'NotOwned', 'Message': 'You are selling contracts you do not own or trying to close more than you currently hold. Check you are trading from the correct sub-account and have no existing orders to sell the instrument.'}}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 6
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 447,693.40 PLN (~$111,923.35)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $388,076.65
+
+Allocating $47,500.00 (Base: $88,966.01, GlobalRem: $388,076.65, DailyCap: $50,000.00)
+
+--- Planned Orders (6) ---
+Buy  139  x Asseco     @ 211.60 | Entry BUY (w=15.6%) [$7389 -> 29556 PLN]
+Sell 8189 x GTC        @ 3.15 | Entry SHORT (w=13.6%) [$6449 -> 25796 PLN]
+Buy  158  x KGHM       @ 235.00 | Entry BUY (w=19.6%) [$9309 -> 37237 PLN]
+Sell 1409 x Bogdanka   @ 18.76 | Entry SHORT (w=13.9%) [$6609 -> 26434 PLN]
+Sell 5011 x PGE        @ 8.61 | Entry SHORT (w=22.7%) [$10785 -> 43140 PLN]
+Sell 3199 x Tauron     @ 8.70 | Entry SHORT (w=14.7%) [$6959 -> 27837 PLN]
+
+--- Executing Orders ---
+Executing Buy 139 x Asseco...
+  Result: {'OrderId': '5036597639'}
+Executing Sell 8189 x GTC...
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 477,105.80 PLN (~$119,276.45)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $380,723.55
+
+Allocating $47,500.00 (Base: $88,221.93, GlobalRem: $380,723.55, DailyCap: $50,000.00)
+
+--- Planned Orders (2) ---
+Buy  397  x Asseco     @ 211.60 | Entry BUY (w=44.3%) [$21019 -> 84075 PLN]
+Buy  450  x KGHM       @ 235.00 | Entry BUY (w=55.7%) [$26481 -> 105925 PLN]
+
+--- Executing Orders ---
+Executing Buy 397 x Asseco...
+  Result: {'OrderId': '5036597669'}
+Executing Buy 450 x KGHM...
+  Result: {'OrderId': '5036597670'}
