@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import httpx
+
 from app.sync import NAME_MAP, UIC_MAP
 from data.scripts.preprocess_gpw import process_symbol
 from data.scripts.saxo_client import SaxoClient
@@ -19,17 +21,42 @@ class LiveTrader:
         self.name_map = NAME_MAP
 
     def get_wallet(self) -> dict[str, Any]:
-        """Fetch account balance summary."""
-        import httpx
-
         url = f"{self.client.openapi_base}/port/v1/balances/me"
         headers = self.client._headers()
 
         with httpx.Client(timeout=10) as c:
             r = c.get(url, headers=headers)
-            if r.status_code == 200:
-                return r.json()
-            return {"error": f"HTTP {r.status_code}", "raw": r.text}
+            if r.status_code != 200:
+                return {"error": f"HTTP {r.status_code}", "raw": r.text}
+
+            data = r.json()
+
+            if isinstance(data, dict):
+
+                def _pick(*keys: str, default: float = 0.0) -> float:
+                    for k in keys:
+                        v = data.get(k)
+                        if v is None:
+                            continue
+                        try:
+                            return float(v)
+                        except Exception:
+                            pass
+                    return default
+
+                return {
+                    "Currency": data.get("Currency"),
+                    "CashAvailableForTrading": _pick(
+                        "CashAvailableForTrading",
+                        "MarginAvailableForTrading",
+                        "CashBalance",
+                        default=0.0,
+                    ),
+                    "TotalValue": _pick("TotalValue", default=0.0),
+                    "raw": data,
+                }
+
+            return {"error": "Unexpected balances response shape", "raw": data}
 
     def list_strategies(self) -> list[str]:
         return list(STRATEGY_CONFIG.keys())

@@ -1,6 +1,7 @@
 from typing import Any
 
 from strategies.base import StrategyBase
+from strategies.hybrid_lstm_strategy import HybridLSTMStrategy
 from strategies.lstm_strategy import LSTMStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.momentum import MomentumStrategy
@@ -18,6 +19,14 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "threshold": 0.003,
         "smoothing_window": 3,
         "exit_threshold": -0.002,
+    },
+    "hybrid_lstm_10d": {
+        "long_only": False,
+        "models_dir": "models/hybrid_lstm",
+        "z_entry": 1.0,
+        "z_exit": 0.3,
+        "vol_quantile": 0.7,
+        "min_hold_days": 5,
     },
     "mean_reversion": {
         "window": 20,
@@ -118,6 +127,7 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
 STRATEGY_REGISTRY: dict[str, type[StrategyBase]] = {
     "momentum": MomentumStrategy,
     "mean_reversion": MeanReversionStrategy,
+    "hybrid_lstm_10d": HybridLSTMStrategy,
     "lstm": LSTMStrategy,
     "momentum_tsmom_20d": MomentumStrategy,
     "momentum_tsmom_60d": MomentumStrategy,

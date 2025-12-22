@@ -1,4 +1,3 @@
-# data/scripts/saxo_basic_poc.py
 from __future__ import annotations
 
 import json

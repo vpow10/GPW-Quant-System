@@ -100,6 +100,31 @@ def fetch_ohlc(uic: int, limit: int = 100) -> list[dict[str, Any]]:
         return data.get("Data", [])
 
 
+def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[dict[str, Any]]:
+    """Fetch intraday OHLC data from Saxo (e.g. 60-minute bars)."""
+    token = ensure_access_token()
+    url = f"{OPENAPI_BASE}/chart/v3/charts"
+
+    params: dict[str, str | int] = {
+        "Uic": uic,
+        "AssetType": "Stock",
+        "Horizon": horizon,  # minutes; 60 = hourly
+        "Count": limit,  # number of bars back
+        "FieldGroups": "Data",
+    }
+
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
+    with httpx.Client(timeout=30) as client:
+        r = client.get(url, params=params, headers=headers)
+        if r.status_code != 200:
+            print(f"Error fetching intraday data for UIC {uic}: {r.status_code} {r.text}")
+            return []
+
+        data = r.json()
+        return data.get("Data", [])
+
+
 def parse_saxo_time(ts: str) -> str:
     dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
     return dt.strftime("%Y-%m-%d")
