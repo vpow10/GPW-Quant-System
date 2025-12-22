@@ -145,6 +145,19 @@ def cmd_all() -> None:
     print(f"Combined panel saved with {len(panel):,} rows and {panel.symbol.nunique()} symbols")
 
 
+def process_symbol(symbol: str) -> pd.DataFrame | None:
+    """Programmatic entry point to process a single symbol."""
+    raw = DATA_RAW / f"{symbol.lower()}.csv"
+    if not raw.exists():
+        return None
+    out = _process_file(raw)
+    if not out:
+        return None
+    sym, df = out
+    _save_symbol(df, sym)
+    return df
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description="Preprocess GPW raw CSVs -> standardized panel")
     p.add_argument("mode", choices=["one", "all"], help="Process single symbol or all")

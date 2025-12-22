@@ -1,0 +1,49 @@
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+[wallet] total_cash=685473.78 total_value=1013502.48
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+KGHM (uic=25285) action=SELL signal 1 -> -1 close=269.0 hybrid_pred=None
+PKN Orlen (uic=25275) action=BUY signal -1 -> 1 close=94.6 hybrid_pred=None
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Intraday) ---
+Calc Exposure  : 1,380,328.20 PLN (~$345,082.05)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $154,917.95
+
+--- Planned Orders (1) ---
+Sell 2635 x KGHM       @ 269.00 | Exit SELL (Closing Held Position: 2635.0)
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[auth] Access token refreshed.
+[wallet] ccy=EUR total_cash=685501.13 total_value=1013998.71
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+PKN Orlen (uic=25275) action=SELL signal 1 -> -1 close=94.58 hybrid_pred=-0.0008940687985159457
+PKO BP (uic=25279) action=BUY signal -1 -> 1 close=85.34 hybrid_pred=0.0004813318373635411
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Intraday) ---
+Calc Exposure  : 0.00 PLN (~€0.00)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €500,000.00
+
+--- Planned Orders (1) ---
+Sell 1    x PKN Orlen  @ 94.58 | Exit SELL (No Pos Data -> Default 1)
+
+[DRY-RUN] No orders placed. Use --execute to trade.

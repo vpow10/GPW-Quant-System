@@ -1,4 +1,3 @@
-# data/scripts/saxo_basic_poc.py
 from __future__ import annotations
 
 import json
@@ -58,27 +57,44 @@ class SaxoClient:
 
     def api_post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         url = f"{self.openapi_base}{path}"
-        with httpx.Client(timeout=self.timeout) as client:
-            r = client.post(url, json=payload, headers=self._headers())
-            try:
-                r.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                ctype = r.headers.get("content-type", "")
-                req_id = r.headers.get("X-Request-Id") or r.headers.get("Request-Id")
+        import time
+
+        for attempt in range(5):
+            with httpx.Client(timeout=self.timeout) as client:
+                r = client.post(url, json=payload, headers=self._headers())
+
+                if r.status_code == 429:
+                    wait_sec = int(r.headers.get("Retry-After", 2 ** (attempt + 1)))
+                    print(f"[API] Rate limit 429 hit. Sleeping {wait_sec}s...")
+                    time.sleep(wait_sec)
+                    continue
+
                 try:
-                    detail: Any = r.json()
-                except Exception:
-                    detail = r.text or repr(r.content)
-                raise SystemExit(
-                    "Order POST failed.\n"
-                    f"  url         : {url}\n"
-                    f"  status      : {r.status_code}\n"
-                    f"  content-type: {ctype}\n"
-                    f"  request-id  : {req_id}\n"
-                    f"  response    : {detail}"
-                ) from exc
-            resp_json: dict[str, Any] = r.json()  # type: ignore[assignment]
-            return resp_json
+                    r.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    ctype = r.headers.get("content-type", "")
+                    req_id = r.headers.get("X-Request-Id") or r.headers.get("Request-Id")
+                    try:
+                        detail: Any = r.json()
+                    except Exception:
+                        detail = r.text or repr(r.content)
+                    if r.status_code == 429:
+                        time.sleep(2)
+                        continue
+
+                    raise SystemExit(
+                        "Order POST failed.\n"
+                        f"  url         : {url}\n"
+                        f"  status      : {r.status_code}\n"
+                        f"  content-type: {ctype}\n"
+                        f"  request-id  : {req_id}\n"
+                        f"  response    : {detail}"
+                    ) from exc
+
+                resp_json: dict[str, Any] = r.json()  # type: ignore[assignment]
+                return resp_json
+
+        raise SystemExit(f"API failed after max retries: {url}")
 
     def log_json(self, obj: dict[str, Any]) -> None:
         self.log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -126,3 +142,13 @@ class SaxoClient:
         resp = self.api_post("/trade/v2/orders", payload)
         self.log_json({"request": payload, "response": resp})
         return resp
+
+    def get_net_positions(self) -> dict[str, Any]:
+        """Pobiera otwarte pozycje (NetPositions)."""
+        url = f"{self.openapi_base}/port/v1/netpositions/me"
+        with httpx.Client(timeout=self.timeout) as c:
+            r = c.get(url, headers=self._headers())
+            if r.status_code == 200:
+                return r.json()
+            # Jeśli błąd, zwracamy strukturę błędu
+            return {"error": f"HTTP {r.status_code}", "raw": r.text}

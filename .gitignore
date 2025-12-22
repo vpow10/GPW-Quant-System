@@ -34,3 +34,4 @@ data/signals/
 data/backtests/*.txt
 data/backtests/stress/
 data/backtests/strategies/
+data/backtests/all_hybrids

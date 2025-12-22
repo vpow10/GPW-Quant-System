@@ -33,15 +33,14 @@ TAB_FEATURES = [
     "beta_60d",
 ]
 
-
 REGIME_FEATURES = [
     "wig20_mom_60d",
     "wig20_vol_20d",
     "wig20_rsi_14",
 ]
 
-TARGET = "ret_5d_log"
-TARGET_HORIZON = 5
+TARGET_HORIZON = 10
+TARGET = f"ret_{TARGET_HORIZON}d_log"
 
 MOMENTUM_PATH = REPO_ROOT / "data" / "signals" / "momentum.parquet"
 MEANREV_PATH = REPO_ROOT / "data" / "signals" / "mean_reversion.parquet"
@@ -73,21 +72,18 @@ def add_stock_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["vol_log"] = np.log(df["volume"])
     df["vol_log_chg"] = df["vol_log"].diff()
 
-    # 5d forward target
-    df["ret_5d_log"] = np.log(df["close"].shift(-5) / df["close"])
+    # forward target for chosen horizon
+    df[TARGET] = np.log(df["close"].shift(-TARGET_HORIZON) / df["close"])
 
-    # core indicators
     df["rsi_14"] = rsi(df["close"], window=14)
     df["tsi"] = tsi(df["close"])
     df["vol_20d"] = df["ret_1d_log"].rolling(20).std()
 
-    # moving averages
     df["ma_20"] = df["close"].rolling(20).mean()
     df["ma_50"] = df["close"].rolling(50).mean()
     df["price_ma20_ratio"] = df["close"] / df["ma_20"] - 1.0
     df["price_ma50_ratio"] = df["close"] / df["ma_50"] - 1.0
 
-    # ATR 14 (range / volatility)
     high = df["high"]
     low = df["low"]
     close = df["close"]
@@ -100,7 +96,6 @@ def add_stock_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["atr_14"] = tr.rolling(14).mean()
     df["atr14_rel"] = df["atr_14"] / df["close"]
 
-    # beta vs WIG20 using 60d rolling
     if "wig20_ret_1d" in df.columns:
         cov = df["ret_1d"].rolling(60).cov(df["wig20_ret_1d"])
         var_mkt = df["wig20_ret_1d"].rolling(60).var()
@@ -108,8 +103,7 @@ def add_stock_indicators(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df["beta_60d"] = np.nan
 
-    # lags for seq input
-    lag_cols = {}
+    lag_cols: dict[str, pd.Series] = {}
     for lag in range(1, LAGS + 1):
         lag_cols[f"log_return_lag{lag}"] = df["ret_1d_log"].shift(lag)
         lag_cols[f"log_vol_chg_lag{lag}"] = df["vol_log_chg"].shift(lag)

@@ -130,9 +130,7 @@ class SaxoPKCE:
         }
         return f"{self.auth_base}/authorize?{urllib.parse.urlencode(q)}"
 
-    def exchange_code(
-        self, code: str, redirect_uri: str, code_verifier: str
-    ) -> dict[str, Any]:
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str) -> dict[str, Any]:
         """Exchange authorization code for tokens.
         Two variants: (A) confidential app (Basic Auth) or (B) pure PKCE (no secret)
         """
@@ -178,21 +176,33 @@ class SaxoPKCE:
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
             "code_verifier": code_verifier,
+            "redirect_uri": self.app_url,  # Some providers strictly require this even on refresh
         }
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json",
         }
+
+        use_client_secret = bool(APP_SECRET)
+        if use_client_secret:
+            secret: str = cast(str, APP_SECRET)
+            auth: tuple[str, str] = (self.app_key, secret)
+            # Some implementations might want client_id in body too, but Basic Auth is standard
+            # for confidential clients. We'll add it to body just in case it's not in Auth header
+            # or if the server expects it there for consistency.
+            data["client_id"] = self.app_key
+        else:
+            auth = ("", "")
+            data["client_id"] = self.app_key
+
         with httpx.Client(timeout=30) as c:
-            r = c.post(f"{self.auth_base}/token", data=data, headers=headers)
+            r = c.post(f"{self.auth_base}/token", data=data, headers=headers, auth=auth)
             if not r.is_success:
                 try:
                     body = r.json()
                 except Exception:
                     body = r.text
-                raise SystemExit(
-                    f"Token refresh failed ({r.status_code}). Details: {body!r}"
-                )
+                raise SystemExit(f"Token refresh failed ({r.status_code}). Details: {body!r}")
             return r.json()  # type: ignore[return-value]
 
 
@@ -263,9 +273,7 @@ def login(port: int = 8765) -> Tokens:
     try:
         server = http.server.HTTPServer(("127.0.0.1", port), _CallbackHandler)
     except OSError as e:
-        raise SystemExit(
-            f"Cannot bind to 127.0.0.1:{port} ({e}). Try a different --port."
-        ) from e
+        raise SystemExit(f"Cannot bind to 127.0.0.1:{port} ({e}). Try a different --port.") from e
 
     th = threading.Thread(target=server.serve_forever, daemon=True)
     th.start()
@@ -280,9 +288,7 @@ def login(port: int = 8765) -> Tokens:
             raise SystemExit(f"Failed to open browser: {e}") from e
 
         if not _CallbackHandler.done.wait(120):
-            raise TimeoutError(
-                "No OAuth callback received. Did you approve in the browser?"
-            )
+            raise TimeoutError("No OAuth callback received. Did you approve in the browser?")
 
         if not _CallbackHandler.result:
             raise RuntimeError("No authorization code in callback.")
@@ -319,6 +325,62 @@ def ensure_access_token() -> str:
     raise SystemExit("Refresh token expired or missing. Please login again.")
 
 
+def print_status() -> None:
+    """Print the content and expiry status of the stored tokens."""
+    store = TokenStore()
+    tokens = store.load()
+    if not tokens:
+        print("[status] No tokens found.")  # noqa: T201
+        return
+
+    now = time.time()
+
+    # Access Token
+    acc_rem = tokens.access_exp - now
+    if acc_rem > 0:
+        acc_status = f"VALID (expires in {int(acc_rem // 60)}m {int(acc_rem % 60)}s)"
+    else:
+        acc_status = f"EXPIRED ({int(abs(acc_rem) // 60)}m {int(abs(acc_rem) % 60)}s ago)"
+
+    # Refresh Token
+    if tokens.refresh_token:
+        if tokens.refresh_exp:
+            ref_rem = tokens.refresh_exp - now
+            if ref_rem > 0:
+                ref_status = f"VALID (expires in {ref_rem / 3600:.1f} hours)"
+            else:
+                ref_status = "EXPIRED"
+        else:
+            ref_status = "VALID (no expiry set)"
+    else:
+        ref_status = "NONE"
+
+    print("--- Saxo Token Status ---")  # noqa: T201
+    print(f"Access Token  : {acc_status}")  # noqa: T201
+    print(f"Refresh Token : {ref_status}")  # noqa: T201
+    print(f"Token Path    : {store.path.absolute()}")  # noqa: T201
+
+
+def force_refresh() -> None:
+    """Explicitly refresh the access token now."""
+    store = TokenStore()
+    tokens = store.load()
+    if not tokens or not tokens.refresh_token:
+        print("[refresh] No refresh token available. Please login first.")  # noqa: T201
+        return
+
+    # We purposefully don't check expiration, just try to refresh
+    pkce = SaxoPKCE(APP_KEY or "", APP_URL or "", AUTH_BASE)
+    try:
+        resp = pkce.refresh(tokens.refresh_token, tokens.code_verifier)
+        new_tokens = Tokens.from_token_response(resp, tokens.code_verifier)
+        store.save(new_tokens)
+        print("[refresh] SUCCESS. New access token obtained.")  # noqa: T201
+        print_status()
+    except Exception as e:
+        print(f"[refresh] FAILED: {e}")  # noqa: T201
+
+
 def logout() -> None:
     """Clear saved tokens."""
     TokenStore().clear()
@@ -335,12 +397,18 @@ def main() -> None:
     )
     p_login.set_defaults(func=lambda a: login(a.port))
 
-    sub.add_parser("ensure", help="Prints a valid access token").set_defaults(
+    sub.add_parser(
+        "ensure", help="Prints a valid access token (refreshes if needed)"
+    ).set_defaults(
         func=lambda a: print(ensure_access_token())  # noqa: T201
     )
-    sub.add_parser("logout", help="Delete stored tokens").set_defaults(
-        func=lambda a: logout()
+    sub.add_parser("status", help="Show token status and expiry").set_defaults(
+        func=lambda a: print_status()
     )
+    sub.add_parser("refresh", help="Force a token refresh").set_defaults(
+        func=lambda a: force_refresh()
+    )
+    sub.add_parser("logout", help="Delete stored tokens").set_defaults(func=lambda a: logout())
 
     args = parser.parse_args()
     args.func(args)
