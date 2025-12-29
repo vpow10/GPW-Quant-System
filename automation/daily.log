@@ -344,3 +344,49 @@ Executing Buy 397 x Asseco...
   Result: {'OrderId': '5036597669'}
 Executing Buy 450 x KGHM...
   Result: {'OrderId': '5036597670'}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 1,327,782.00 PLN (~$331,945.50)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $168,054.50
+
+Allocating $47,500.00 (Base: $68,552.49, GlobalRem: $168,054.50, DailyCap: $50,000.00)
+
+--- Planned Orders (2) ---
+Buy  4314 x Kernel     @ 20.95 | Entry BUY (w=47.6%) [$22596 -> 90385 PLN]
+Buy  392  x KGHM       @ 253.70 | Entry BUY (w=52.4%) [$24904 -> 99615 PLN]
+
+--- Executing Orders ---
+Executing Buy 4314 x Kernel...
+  Result: {'OrderId': '5036724334'}
+Executing Buy 392 x KGHM...
+  Result: {'OrderId': '5036724335'}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 1,593,718.00 PLN (~$398,429.50)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $101,570.50
+
+Allocating $47,500.00 (Base: $63,764.90, GlobalRem: $101,570.50, DailyCap: $50,000.00)
+
+--- Planned Orders (2) ---
+Buy  16670 x Boryszew   @ 6.14 | Entry BUY (w=53.9%) [$25589 -> 102356 PLN]
+Buy  320  x KGHM       @ 273.80 | Entry BUY (w=46.1%) [$21911 -> 87644 PLN]
+
+--- Executing Orders ---
+Executing Buy 16670 x Boryszew...
+  Result: {'OrderId': '5036737344'}
+Executing Buy 320 x KGHM...
+  Result: {'OrderId': '5036737345'}
