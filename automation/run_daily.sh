@@ -25,9 +25,8 @@ FLAGS="--strategy $TRADER_STRATEGY --allocation-pct $TRADER_ALLOCATION --auto-al
 # Defaults if not set in env
 : "${TRADER_MAX_CAPITAL:=500000}"
 : "${TRADER_MAX_DAILY_SPEND:=50000}"
-: "${TRADER_FX_RATE:=4.0}"
 
-FLAGS="$FLAGS --max-capital $TRADER_MAX_CAPITAL --max-daily-spend $TRADER_MAX_DAILY_SPEND --fx-rate $TRADER_FX_RATE"
+FLAGS="$FLAGS --max-capital $TRADER_MAX_CAPITAL --max-daily-spend $TRADER_MAX_DAILY_SPEND"
 
 if [ "$TRADER_LONG_ONLY" = "true" ]; then
     FLAGS="$FLAGS --long-only"

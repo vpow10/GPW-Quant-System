@@ -390,3 +390,51 @@ Executing Buy 16670 x Boryszew...
   Result: {'OrderId': '5036737344'}
 Executing Buy 320 x KGHM...
   Result: {'OrderId': '5036737345'}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 4
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 1,803,834.20 PLN (~$450,958.55)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $49,041.45
+
+Allocating $46,589.38 (Base: $59,183.74, GlobalRem: $49,041.45, DailyCap: $50,000.00)
+
+--- Planned Orders (4) ---
+Buy  413  x Citi Handlowy @ 107.00 | Entry BUY (w=23.8%) [$11067 -> 44270 PLN]
+Buy  7900 x Boryszew   @ 6.18 | Entry BUY (w=26.2%) [$12206 -> 48824 PLN]
+Buy  1669 x JSW        @ 22.50 | Entry BUY (w=20.2%) [$9393 -> 37574 PLN]
+Buy  199  x KGHM       @ 279.00 | Entry BUY (w=29.9%) [$13922 -> 55690 PLN]
+
+--- Executing Orders ---
+Executing Buy 413 x Citi Handlowy...
+  Result: {'OrderId': '5036742360'}
+Executing Buy 7900 x Boryszew...
+  Result: {'OrderId': '5036742361'}
+Executing Buy 1669 x JSW...
+  Result: {'OrderId': '5036742362'}
+Executing Buy 199 x KGHM...
+  Result: {'OrderId': '5036742364'}
+Fetching live USD rate from NBP...
+Live USD Rate: 3.5936 PLN
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 3.5936
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 4
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 1,990,335.38 PLN (~$553,855.57)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $-53,855.57
+[!] Max Exposure Limit reached. No new entries allowed.
+Skipping Entries: No Budget Available (Portfolio Limit or No Cash).
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---

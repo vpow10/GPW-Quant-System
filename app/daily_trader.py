@@ -9,11 +9,32 @@ Features:
 import argparse
 import asyncio
 
+import httpx
 from dotenv import load_dotenv
 
 from app.engine import LiveTrader
 
 load_dotenv()
+
+
+def get_live_usd_rate() -> float | None:
+    """
+    Fetches the current average USD exchange rate from NBP API.
+    Returns float rate (e.g. 4.0). Returns None on failure.
+    """
+    url = "http://api.nbp.pl/api/exchangerates/rates/a/usd/?format=json"
+    try:
+        # Timeout 5s is usually enough for NBP
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+            # data structure: {"rates": [{"mid": 3.95, ...}]}
+            mid = data["rates"][0]["mid"]
+            return float(mid)
+    except Exception as e:
+        print(f"[!] Failed to fetch live USD rate: {e}")
+        return None
 
 
 async def main():
@@ -69,17 +90,21 @@ async def main():
         default=50000.0,
         help="Maximum amount (USD) to spend on new entries per day. Defaults to 50k.",
     )
-    parser.add_argument(
-        "--fx-rate",
-        type=float,
-        default=4.0,
-        help="USD to PLN exchange rate for position sizing. Defaults to 4.0.",
-    )
     args = parser.parse_args()
+
+    # Fetch Live Rate
+    print("Fetching live USD rate from NBP...")
+    live_rate = get_live_usd_rate()
+    if live_rate:
+        fx_rate = live_rate
+        print(f"Live USD Rate: {fx_rate:.4f} PLN")
+    else:
+        fx_rate = 4.0
+        print(f"[!] Using Fallback FX Rate: {fx_rate:.4f} PLN")
 
     print(f"Max Capital    : ${args.max_capital:,.2f}")
     print(f"Max Daily Spend: ${args.max_daily_spend:,.2f}")
-    print(f"FX Rate        : {args.fx_rate}")
+    print(f"FX Rate        : {fx_rate}")
 
     trader = LiveTrader()
 
@@ -217,7 +242,7 @@ async def main():
             pass
 
     # Convert Exposure to USD
-    current_exposure_usd = calculated_exposure_pln / args.fx_rate
+    current_exposure_usd = calculated_exposure_pln / fx_rate
 
     global_remaining = args.max_capital - current_exposure_usd
 
@@ -283,7 +308,7 @@ async def main():
                 allocated_usd = final_daily_alloc * weight
 
                 # Convert USD -> PLN
-                allocated_pln = allocated_usd * args.fx_rate
+                allocated_pln = allocated_usd * fx_rate
 
                 price = pick["close"]
                 qty = int(allocated_pln / price)
