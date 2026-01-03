@@ -1,4 +1,20 @@
 # noqa: T201
+"""
+Build hybrid LSTM signals with regime-dependent portfolio logic.
+
+Example:
+  python build_hybrid_lstm_signals_regimeblend.py \
+    --output data/signals/hybrid_regimeblend.parquet \
+    --z-entry 1.0 --z-exit 0.3 --min-hold-days 10 \
+    --bull-long-only \
+    --bear-flat \
+    --bull-score-blend 0.6 \
+    --z-smooth-span 10 \
+    --rebalance weekly --rebalance-weekday 4 \
+    --bull-vol-quantile 1.0 --normal-vol-quantile 0.7
+"""
+from __future__ import annotations
+
 import argparse
 from pathlib import Path
 
@@ -40,7 +56,6 @@ SYMBOLS = [
     "tpe",
 ]
 
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -80,30 +95,6 @@ def load_model_for_symbol(sym: str):
     return model, seq_scaler, tab_scaler, reg_scaler
 
 
-def apply_hysteresis(
-    preds: np.ndarray, threshold: float, exit_threshold: float | None
-) -> np.ndarray:
-    if exit_threshold is None:
-        exit_threshold = threshold * 0.5
-
-    current_pos = 0
-    sigs = np.zeros_like(preds)
-    for i, p in enumerate(preds):
-        if current_pos == 0:
-            if p > threshold:
-                current_pos = 1
-            elif p < -threshold:
-                current_pos = -1
-        elif current_pos == 1:
-            if p < exit_threshold:
-                current_pos = 0
-        elif current_pos == -1:
-            if p > -exit_threshold:
-                current_pos = 0
-        sigs[i] = current_pos
-    return sigs
-
-
 def generate_predictions_for_symbol(df_sym: pd.DataFrame, sym: str) -> pd.DataFrame:
     model, seq_scaler, tab_scaler, reg_scaler = load_model_for_symbol(sym)
     if model is None:
@@ -111,6 +102,7 @@ def generate_predictions_for_symbol(df_sym: pd.DataFrame, sym: str) -> pd.DataFr
         return pd.DataFrame()
 
     df_sym = add_stock_indicators(df_sym)
+
     all_seq_cols = [c for group in SEQ_GROUPS for c in group]
     all_req = all_seq_cols + TAB_FEATURES + REGIME_FEATURES + [TARGET]
 
@@ -145,34 +137,97 @@ def generate_predictions_for_symbol(df_sym: pd.DataFrame, sym: str) -> pd.DataFr
             "wig20_mom_60d",
             "wig20_vol_20d",
             "wig20_rsi_14",
+            "mom_signal",
+            "mr_signal",
         ]
     ].copy()
     out["hybrid_pred"] = preds
     return out
 
 
+def _zscore(s: pd.Series) -> pd.Series:
+    std = s.std(ddof=0)
+    if std == 0 or np.isnan(std):
+        return pd.Series(0.0, index=s.index)
+    return (s - s.mean()) / std
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build hybrid LSTM signals parquet.")
-    parser.add_argument(
-        "--output",
-        type=Path,
-        required=True,
-        help="Output Parquet path for signals.",
+    parser = argparse.ArgumentParser(
+        description="Build hybrid LSTM signals parquet (RegimeBlend)."
     )
-    # hysteresis and regime params to tune
+    parser.add_argument(
+        "--output", type=Path, required=True, help="Output Parquet path for signals."
+    )
     parser.add_argument("--z-entry", type=float, default=1.0)
     parser.add_argument("--z-exit", type=float, default=0.3)
-    parser.add_argument("--vol-quantile", type=float, default=0.8)
-    parser.add_argument("--min-hold-days", type=int, default=5)
+    parser.add_argument("--min-hold-days", type=int, default=10)
+
+    parser.add_argument(
+        "--z-smooth-span",
+        type=int,
+        default=10,
+        help="EWMA span on hybrid_pred per symbol (0 disables).",
+    )
+
+    parser.add_argument("--rebalance", choices=["daily", "weekly"], default="weekly")
+    parser.add_argument(
+        "--rebalance-weekday",
+        type=int,
+        default=4,
+        help="0=Mon ... 4=Fri (used if rebalance=weekly).",
+    )
+
+    parser.add_argument(
+        "--bull-long-only", action="store_true", help="Disable shorts in bull regime."
+    )
+    parser.add_argument(
+        "--bear-flat", action="store_true", help="Set all signals to 0 in bear regime."
+    )
+    parser.add_argument(
+        "--bear-short-only",
+        action="store_true",
+        help="Only allow shorts in bear regime (ignored if --bear-flat).",
+    )
+    parser.add_argument(
+        "--normal-long-only", action="store_true", help="Disable shorts in normal regime."
+    )
+
+    parser.add_argument(
+        "--bull-vol-quantile",
+        type=float,
+        default=1.0,
+        help="Vol quantile threshold in bull (1.0 disables vol filter).",
+    )
+    parser.add_argument(
+        "--normal-vol-quantile", type=float, default=0.7, help="Vol quantile threshold in normal."
+    )
+    parser.add_argument(
+        "--bear-vol-quantile",
+        type=float,
+        default=0.7,
+        help="Vol quantile threshold in bear (used only if not flat).",
+    )
+
+    parser.add_argument(
+        "--bull-score-blend",
+        type=float,
+        default=0.6,
+        help="0=pred_z only; 1=mom_z only (in bull).",
+    )
+
     args = parser.parse_args()
 
     if not DATA_PATH.exists():
         raise SystemExit(f"Missing combined panel at {DATA_PATH}")
 
+    if args.bear_flat and args.bear_short_only:
+        print("[warn] --bear-flat overrides --bear-short-only.")
+
     panel = pd.read_parquet(DATA_PATH)
     panel = panel.loc[:, ~panel.columns.str.contains("^Unnamed")]
     panel["date"] = pd.to_datetime(panel["date"])
-    panel["symbol"] = panel["symbol"].str.lower()
+    panel["symbol"] = panel["symbol"].astype(str).str.lower()
 
     panel = add_wig20_features(panel)
     panel = merge_strategy_signals(panel)
@@ -190,42 +245,74 @@ def main() -> None:
     if not all_out:
         raise SystemExit("No predictions produced.")
 
-    signals = pd.concat(all_out, ignore_index=True)
+    signals = (
+        pd.concat(all_out, ignore_index=True)
+        .sort_values(["symbol", "date"])
+        .reset_index(drop=True)
+    )
 
-    # 1) cross-sectional z-score of predictions per day
-    def _zscore(s: pd.Series) -> pd.Series:
-        std = s.std(ddof=0)
-        if std == 0 or np.isnan(std):
-            return pd.Series(0.0, index=s.index)
-        return (s - s.mean()) / std
+    if args.z_smooth_span and args.z_smooth_span > 0:
+        span = int(args.z_smooth_span)
+        signals["hybrid_pred_s"] = signals.groupby("symbol", sort=False)["hybrid_pred"].transform(
+            lambda s: s.ewm(span=span, adjust=False).mean()
+        )
+    else:
+        signals["hybrid_pred_s"] = signals["hybrid_pred"]
 
-    signals["pred_z"] = signals.groupby("date")["hybrid_pred"].transform(_zscore)
+    signals["pred_z"] = signals.groupby("date", sort=False)["hybrid_pred_s"].transform(_zscore)
+    signals["mom_z"] = signals.groupby("date", sort=False)["mom_signal"].transform(_zscore)
 
-    # 2) per-symbol hysteresis + min holding
-    signals = signals.sort_values(["symbol", "date"]).reset_index(drop=True)
+    signals["regime"] = np.where(
+        signals["wig20_mom_60d"] > 0,
+        "BULL",
+        np.where(signals["wig20_mom_60d"] < 0, "BEAR", "NORMAL"),
+    )
 
-    z_entry = args.z_entry
-    z_exit = args.z_exit
-    min_hold = args.min_hold_days
+    vol_series = signals["wig20_vol_20d"].replace([np.inf, -np.inf], np.nan).dropna()
+    if vol_series.empty:
+        vol_q_bull = vol_q_norm = vol_q_bear = np.inf
+    else:
+        vol_q_bull = vol_series.quantile(float(args.bull_vol_quantile))
+        vol_q_norm = vol_series.quantile(float(args.normal_vol_quantile))
+        vol_q_bear = vol_series.quantile(float(args.bear_vol_quantile))
+
+    w = min(1.0, max(0.0, float(args.bull_score_blend)))
+    signals["score_z"] = signals["pred_z"]
+    bull_mask = signals["regime"] == "BULL"
+    signals.loc[bull_mask, "score_z"] = (1.0 - w) * signals.loc[
+        bull_mask, "pred_z"
+    ] + w * signals.loc[bull_mask, "mom_z"]
+
+    z_entry = float(args.z_entry)
+    z_exit = float(args.z_exit)
+    min_hold = int(args.min_hold_days)
+
+    if args.rebalance == "weekly":
+        signals["rebalance"] = signals["date"].dt.weekday == int(args.rebalance_weekday)
+    else:
+        signals["rebalance"] = True
 
     def _symbol_signals(g: pd.DataFrame) -> pd.DataFrame:
         pos = 0
         days_in_pos = 0
         sig = np.zeros(len(g), dtype=np.int8)
-        z_vals = g["pred_z"].to_numpy()
+
+        z_vals = g["score_z"].to_numpy(dtype=np.float64, copy=False)
+        reb = g["rebalance"].to_numpy(dtype=bool, copy=False)
 
         for i, z in enumerate(z_vals):
             if pos == 0:
                 days_in_pos = 0
-                if z > z_entry:
-                    pos = 1
-                    days_in_pos = 1
-                elif z < -z_entry:
-                    pos = -1
-                    days_in_pos = 1
+                if reb[i]:
+                    if z > z_entry:
+                        pos = 1
+                        days_in_pos = 1
+                    elif z < -z_entry:
+                        pos = -1
+                        days_in_pos = 1
             else:
                 days_in_pos += 1
-                if days_in_pos >= min_hold:
+                if reb[i] and days_in_pos >= min_hold:
                     if pos == 1 and z < z_exit:
                         pos = 0
                         days_in_pos = 0
@@ -235,22 +322,41 @@ def main() -> None:
             sig[i] = pos
 
         g["base_signal"] = sig
+        g["prev_signal"] = pd.Series(sig, index=g.index).shift(1).fillna(0).astype(int)
         return g
 
-    groups = []
-    for _, g in signals.groupby("symbol", sort=False):
-        groups.append(_symbol_signals(g))
-    signals = pd.concat(groups, ignore_index=True)
+    signals = pd.concat(
+        [_symbol_signals(g) for _, g in signals.groupby("symbol", sort=False)], ignore_index=True
+    )
 
-    # 3) WIG20 regime filter
-    vol_q = signals["wig20_vol_20d"].quantile(args.vol_quantile)
-    regime_good = (signals["wig20_mom_60d"] > 0) & (signals["wig20_vol_20d"] <= vol_q)
+    signals["signal"] = signals["base_signal"].astype(int)
 
-    signals["signal"] = 0
-    signals.loc[regime_good, "signal"] = signals.loc[regime_good, "base_signal"]
+    v = signals["wig20_vol_20d"].to_numpy(dtype=np.float64, copy=False)
+    reg = signals["regime"].to_numpy()
 
+    vol_ok = np.ones(len(signals), dtype=bool)
+    vol_ok &= np.where(reg == "BULL", v <= vol_q_bull, True)
+    vol_ok &= np.where(reg == "NORMAL", v <= vol_q_norm, True)
+    vol_ok &= np.where(reg == "BEAR", v <= vol_q_bear, True)
+    signals.loc[~vol_ok, "signal"] = 0
+
+    if args.bull_long_only:
+        signals.loc[signals["regime"].eq("BULL") & (signals["signal"] < 0), "signal"] = 0
+
+    if args.normal_long_only:
+        signals.loc[signals["regime"].eq("NORMAL") & (signals["signal"] < 0), "signal"] = 0
+
+    if args.bear_flat:
+        signals.loc[signals["regime"].eq("BEAR"), "signal"] = 0
+    elif args.bear_short_only:
+        signals.loc[signals["regime"].eq("BEAR") & (signals["signal"] > 0), "signal"] = 0
+
+    signals["signal"] = signals["signal"].astype(int)
+    signals["prev_signal"] = signals["prev_signal"].astype(int)
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     signals.to_parquet(args.output, index=False)
-    print(f"Saved hybrid LSTM signals to {args.output}")
+    print(f"Saved hybrid signals to {args.output}")
 
 
 if __name__ == "__main__":
