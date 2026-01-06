@@ -108,11 +108,25 @@ class LiveTrader:
         # Convert last_row to dict to include all metrics (momentum, z-score, etc.)
         result = cast("dict[str, Any]", last_row.to_dict())
         # Ensure primitive types for JSON/usage
-        result["date"] = str(result["date"])
+        if hasattr(result["date"], "strftime"):
+            result["date"] = result["date"].strftime("%Y-%m-%d")
+        else:
+            result["date"] = str(result["date"]).split(" ")[0]
         result["signal"] = int(result["signal"])
         result["close"] = float(result["close"])
         result["strategy"] = strategy_name
-        result["params"] = str(strategy.params)
+
+        sanitized_params = {}
+        if isinstance(strategy.params, dict):
+            for k, v in strategy.params.items():
+                if hasattr(v, "__fspath__"):
+                    sanitized_params[k] = str(v)
+                else:
+                    sanitized_params[k] = v
+        else:
+            sanitized_params = {"raw": str(strategy.params)}
+
+        result["params"] = sanitized_params
 
         return result
 

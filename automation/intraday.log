@@ -47,3 +47,17 @@ Exposure Remain : €500,000.00
 Sell 1    x PKN Orlen  @ 94.58 | Exit SELL (No Pos Data -> Default 1)
 
 [DRY-RUN] No orders placed. Use --execute to trade.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[auth] Access token refreshed.
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040792.81
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.

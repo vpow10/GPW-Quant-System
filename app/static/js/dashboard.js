@@ -63,8 +63,8 @@ async function loadStrategiesAndSymbols() {
         const stratSel = document.getElementById('sel-strat');
         strats.forEach(s => {
             const opt = document.createElement('option');
-            opt.value = s[0];
-            opt.textContent = s[0]; // assuming tuple (name, name)
+            opt.value = s;
+            opt.textContent = s;
             stratSel.appendChild(opt);
         });
 
@@ -113,13 +113,45 @@ async function analyze() {
             return;
         }
 
+        log(logBox, `Analysis complete.`);
+
         const sig = data.signal;
         let text = "NEUTRAL";
         if (sig === 1) text = "BULLISH (Long)";
         if (sig === -1) text = "BEARISH (Short)";
 
         document.getElementById('signal-result').textContent = `Signal: ${text} | Date: ${data.date}`;
-        document.getElementById('signal-explain').textContent = JSON.stringify(data.params);
+
+        const p = data.params;
+        let pText = "";
+
+        let days = null;
+        if (p.lookback) days = p.lookback;
+        else if (p.window) days = p.window;
+        else if (data.strategy && data.strategy.includes("10d")) days = 10;
+        else if (data.strategy && data.strategy.includes("lstm")) days = 60;
+        else if (data.strategy && data.strategy.includes("20d")) days = 20; // Fallback for variants
+
+        if (days) {
+            pText = `Analyzed ${days} days of data.`;
+        } else {
+            // Fallback to whitelist if logic fails (or just generic text)
+            pText = "Analyzed market data.";
+        }
+
+        const legend = `
+        <div style="margin-top: 10px; border-top: 1px solid #444; padding-top: 5px; font-size: 0.9em; color: #ccc;">
+            <strong>Signal Legend:</strong>
+            <ul style="margin: 5px 0 0 20px; list-style: disc;">
+                <li><strong>BULLISH (Long)</strong>: Expect price increase. Buy/Long position recommended.</li>
+                <li><strong>BEARISH (Short)</strong>: Expect price decrease. Sell/Short position recommended.</li>
+                <li><strong>NEUTRAL</strong>: No clear signal. Close positions or hold cash.</li>
+            </ul>
+        </div>
+        `;
+
+        const explainBox = document.getElementById('signal-explain');
+        explainBox.innerHTML = `<strong>Strategy Parameters:</strong> ${pText}<br>${legend}`;
 
         const btn = document.getElementById('btn-auto-trade');
         if (sig !== 0) {

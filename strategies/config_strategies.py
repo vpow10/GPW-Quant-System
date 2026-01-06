@@ -132,6 +132,7 @@ STRATEGY_REGISTRY: dict[str, type[StrategyBase]] = {
     "momentum_tsmom_20d": MomentumStrategy,
     "momentum_tsmom_60d": MomentumStrategy,
     "momentum_tsmom_120d": MomentumStrategy,
+    "momentum_tsmom_60d_longonly": MomentumStrategy,
     "momentum_60d_loose": MomentumStrategy,
     "momentum_120d_loose": MomentumStrategy,
     "momentum_252d_longonly": MomentumStrategy,
