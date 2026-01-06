@@ -6,6 +6,7 @@
     <button class="tab-btn" onclick="openTab(event, 'Auto')">Auto Strategies</button>
     <button class="tab-btn" onclick="openTab(event, 'Manual')">Manual Trade</button>
     <button class="tab-btn" onclick="openTab(event, 'Reports')">Reports</button>
+    <button class="tab-btn" onclick="openTab(event, 'Execution')">Execution</button>
 </div>
 
 <div id="Monitor" class="tab-content" style="display: block;">
@@ -90,5 +91,63 @@
 
         <div id="man-log" class="log-box"></div>
     </div>
+</div>
+
+<div id="Execution" class="tab-content">
+    <div class="header">
+        <h2>Execution Management</h2>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <label style="font-weight:bold; margin-right:10px;">Mode:</label>
+        <select id="exec-mode" onchange="switchExecMode(this.value)" style="padding: 5px; font-size: 1rem;">
+            <option value="daily" selected>Daily Trader</option>
+            <option value="intraday">Intraday Trader</option>
+        </select>
+    </div>
+
+    <div class="config-box">
+        <h3>Configuration (<span id="config-title">daily_config.env</span>)</h3>
+        <div class="form-group">
+            <label>Strategy</label>
+            <select id="exec-strat"></select>
+        </div>
+        <div class="form-group">
+            <label>Allocation (0.1 = 10%)</label>
+            <input type="number" id="exec-alloc" step="0.05">
+        </div>
+        <div class="form-group">
+            <label>Max Capital</label>
+            <input type="number" id="exec-max-cap">
+        </div>
+        <div class="form-group">
+            <label>Max Daily Spend</label>
+            <input type="number" id="exec-daily-spend">
+        </div>
+        <div class="form-group">
+            <label>Long Only</label>
+            <input type="checkbox" id="exec-long-only">
+        </div>
+        <div class="form-group">
+            <label style="color:red">REAL EXECUTION</label>
+            <input type="checkbox" id="exec-execute">
+        </div>
+        <div style="margin-top: 10px;">
+            <button onclick="saveConfig()">Save Config</button>
+            <button id="btn-run-exec" onclick="runScript()" style="margin-left: 20px; background-color: #d9534f;">Run
+                Daily Trader</button>
+        </div>
+    </div>
+    <div class="main-content">
+        <h3 id="log-header">Execution Logs (automation/daily.log)</h3>
+        <div style="margin-bottom: 5px;">
+            <button onclick="pollLogs()">Refresh Logs</button>
+            <input type="checkbox" id="auto-refresh" checked>
+            <label for="auto-refresh" style="font-weight: normal; font-size: 0.9em;">Auto Refresh (5s)</label>
+        </div>
+        <div id="exec-log-viewer" class="log-box large"
+            style="height: 500px; font-family: monospace; white-space: pre-wrap;"></div>
+    </div>
+</div>
 </div>
 {% endblock %}

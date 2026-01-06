@@ -61,3 +61,66 @@ Found 14 instruments to analyze intraday.
 
 Total Active Signals (Changes): 0
 No signal changes this run. No trades.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040772.72
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040669.10
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040669.10
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : lstm
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040669.10
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+Asseco (uic=32368) action=BUY signal 0 -> 1 close=235.0 hybrid_pred=None
+JSW (uic=53764) action=BUY signal 0 -> 1 close=23.95 hybrid_pred=None
+Bogdanka (uic=45371) action=BUY signal 0 -> 1 close=19.12 hybrid_pred=None
+
+Total Active Signals (Changes): 3
+
+--- Limit Check (Intraday) ---
+Calc Exposure  : 0.00 PLN (~€0.00)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €500,000.00
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---

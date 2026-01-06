@@ -60,29 +60,39 @@ async function loadStrategiesAndSymbols() {
     try {
         const stratRes = await fetch('/api/strategies');
         const strats = await stratRes.json();
+
         const stratSel = document.getElementById('sel-strat');
+        const execSel = document.getElementById('exec-strat');
+
+        // Clear existing options handled by re-run safety usually, but simplest to wipe first
+        if (stratSel) stratSel.innerHTML = '';
+        if (execSel) execSel.innerHTML = '';
+
         strats.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s;
-            opt.textContent = s;
-            stratSel.appendChild(opt);
+            // s is string name
+            const opt1 = document.createElement('option');
+            opt1.value = s;
+            opt1.textContent = s;
+            if (stratSel) stratSel.appendChild(opt1);
+
+            const opt2 = document.createElement('option');
+            opt2.value = s;
+            opt2.textContent = s;
+            if (execSel) execSel.appendChild(opt2);
         });
 
         const symRes = await fetch('/api/symbols');
         const syms = await symRes.json();
-
-        const populate = (id) => {
-            const sel = document.getElementById(id);
+        const symSel = document.getElementById('sel-symbol');
+        if (symSel) {
+            symSel.innerHTML = '';
             syms.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value = s.uic;
                 opt.textContent = s.name;
-                sel.appendChild(opt);
+                symSel.appendChild(opt);
             });
-        };
-        populate('sel-symbol-auto');
-        populate('sel-symbol-manual');
-
+        }
     } catch (e) {
         console.error("Failed to load init data", e);
     }
@@ -335,11 +345,147 @@ async function startLogin() {
     }
 }
 
+// --- Execution Tab Logic ---
+
+let currentExecMode = 'daily';
+
+function switchExecMode(mode) {
+    currentExecMode = mode;
+
+    // Update labels
+    const titleEl = document.getElementById('config-title');
+    if (titleEl) titleEl.textContent = `${mode}_config.env`;
+
+    const logHeader = document.getElementById('log-header');
+    if (logHeader) logHeader.textContent = `Execution Logs (automation/${mode}.log)`;
+
+    // Update Run Button
+    const btn = document.getElementById('btn-run-exec');
+    if (btn) btn.textContent = `Run ${mode.charAt(0).toUpperCase() + mode.slice(1)} Trader`;
+
+    // Reload data
+    loadConfig();
+    const logViewer = document.getElementById('exec-log-viewer');
+    if (logViewer) {
+        logViewer.textContent = 'Switching logs...';
+        logViewer.scrollTop = 0;
+    }
+    pollLogs();
+}
+
+async function loadConfig() {
+    try {
+        const res = await fetch(`/api/config/${currentExecMode}`);
+        const cfg = await res.json();
+
+        const strat = document.getElementById('exec-strat');
+        if (strat) strat.value = cfg.TRADER_STRATEGY || "momentum";
+
+        const alloc = document.getElementById('exec-alloc');
+        if (alloc) alloc.value = cfg.TRADER_ALLOCATION || "0.1";
+
+        const maxCap = document.getElementById('exec-max-cap');
+        if (maxCap) maxCap.value = cfg.TRADER_MAX_CAPITAL || "500000";
+
+        const dailySpend = document.getElementById('exec-daily-spend');
+        if (dailySpend) dailySpend.value = cfg.TRADER_MAX_DAILY_SPEND || "50000";
+
+        const longOnly = document.getElementById('exec-long-only');
+        if (longOnly) longOnly.checked = (cfg.TRADER_LONG_ONLY === 'true');
+
+        const execute = document.getElementById('exec-execute');
+        if (execute) execute.checked = (cfg.TRADER_EXECUTE === 'true');
+
+    } catch (e) {
+        console.error("Failed to load config", e);
+    }
+}
+
+async function saveConfig() {
+    const cfg = {
+        TRADER_STRATEGY: document.getElementById('exec-strat').value,
+        TRADER_ALLOCATION: document.getElementById('exec-alloc').value,
+        TRADER_MAX_CAPITAL: document.getElementById('exec-max-cap').value,
+        TRADER_MAX_DAILY_SPEND: document.getElementById('exec-daily-spend').value,
+        TRADER_LONG_ONLY: document.getElementById('exec-long-only').checked ? 'true' : 'false',
+        TRADER_EXECUTE: document.getElementById('exec-execute').checked ? 'true' : 'false'
+    };
+
+    try {
+        const res = await fetch(`/api/config/${currentExecMode}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cfg)
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`Saved ${currentExecMode}_config.env`);
+        } else {
+            alert("Error saving: " + data.error);
+        }
+    } catch (e) {
+        alert("Save failed: " + e);
+    }
+}
+
+async function runScript() {
+    if (!confirm(`Run ${currentExecMode} Trader script now?`)) return;
+
+    try {
+        const res = await fetch(`/api/exec/${currentExecMode}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            pollLogs();
+        } else {
+            alert("Error: " + data.error);
+        }
+    } catch (e) {
+        alert("Exec failed: " + e);
+    }
+}
+
+async function pollLogs() {
+    if (typeof currentExecMode === 'undefined') return;
+    try {
+        const res = await fetch(`/api/logs/${currentExecMode}`);
+        const data = await res.json();
+        if (data.lines) {
+            const viewer = document.getElementById('exec-log-viewer');
+            if (!viewer) return;
+
+            // Check if we are scrolled to bottom
+            const isAtBottom = viewer.scrollHeight - viewer.scrollTop <= viewer.clientHeight + 50;
+
+            viewer.textContent = data.lines.join("");
+
+            // Auto scroll if was at bottom
+            if (isAtBottom) {
+                viewer.scrollTop = viewer.scrollHeight;
+            }
+        }
+    } catch (e) {
+        console.error("Log poll failed", e);
+    }
+}
+
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    loadStrategiesAndSymbols();
     checkAuth();
+    loadStrategiesAndSymbols();
     loadReportList();
+    loadConfig();
+
     // Poll auth every 60s
     setInterval(checkAuth, 60000);
+    // Poll logs every 5s if tab is active AND auto-refresh is checked
+    setInterval(() => {
+        const tab = document.getElementById('Execution');
+        const isTabVisible = tab && tab.style.display === 'block';
+        const autoCheck = document.getElementById('auto-refresh');
+        const isAuto = autoCheck && autoCheck.checked;
+        if (isTabVisible && isAuto) {
+            pollLogs();
+        }
+    }, 5000);
 });

@@ -189,6 +189,79 @@ def get_report(filename):
         return jsonify({"error": str(e)}), 404
 
 
+@app.route("/api/config/<mode>", methods=["GET"])
+def get_config(mode):
+    if mode not in ("daily", "intraday"):
+        return jsonify({"error": "Invalid mode"}), 400
+
+    config = {}
+    path = f"automation/{mode}_config.env"
+    try:
+        import os
+
+        if not os.path.exists(path):
+            return jsonify({})
+
+        with open(path, "r") as f:
+            for line in f:
+                if "=" in line:
+                    key, val = line.strip().split("=", 1)
+                    config[key] = val
+        return jsonify(config)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/config/<mode>", methods=["POST"])
+def update_config(mode):
+    if mode not in ("daily", "intraday"):
+        return jsonify({"error": "Invalid mode"}), 400
+
+    data = request.json
+    path = f"automation/{mode}_config.env"
+    try:
+        with open(path, "w") as f:
+            for k, v in data.items():
+                f.write(f"{k}={v}\n")
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/exec/<mode>", methods=["POST"])
+def exec_script(mode):
+    if mode not in ("daily", "intraday"):
+        return jsonify({"error": "Invalid mode"}), 400
+
+    import subprocess
+
+    script = f"automation/run_{mode}.sh"
+    try:
+        subprocess.Popen(["bash", script])
+        return jsonify({"success": True, "message": f"{mode.capitalize()} trader started"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/logs/<mode>")
+def get_logs(mode):
+    if mode not in ("daily", "intraday"):
+        return jsonify({"error": "Invalid mode"}), 400
+
+    import os
+
+    path = f"automation/{mode}.log"
+    try:
+        if not os.path.exists(path):
+            return jsonify({"lines": [f"Log file {path} not found."]})
+        with open(path, "r") as f:
+            # Read last 100 lines
+            lines = f.readlines()
+            return jsonify({"lines": lines[-100:]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 def keep_alive_loop():
     from data.scripts.saxo_auth import force_refresh
 

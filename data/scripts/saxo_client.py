@@ -37,8 +37,10 @@ class SaxoClient:
     def from_env(cls) -> "SaxoClient":
         openapi_base: str = os.getenv(
             "SAXO_OPENAPI_BASE", "https://gateway.saxobank.com/sim/openapi"
-        )
+        ).strip()
         account_key: Optional[str] = os.getenv("SAXO_ACCOUNT_KEY")
+        if account_key:
+            account_key = account_key.strip()
         if not account_key:
             raise SystemExit("Brak SAXO_ACCOUNT_KEY w .env — wymagane do składania zleceń.")
         timeout: int = int(os.getenv("SAXO_CLIENT_TIMEOUT", "30"))
