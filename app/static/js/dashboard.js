@@ -69,30 +69,36 @@ async function loadStrategiesAndSymbols() {
         if (execSel) execSel.innerHTML = '';
 
         strats.forEach(s => {
-            // s is string name
-            const opt1 = document.createElement('option');
-            opt1.value = s;
-            opt1.textContent = s;
-            if (stratSel) stratSel.appendChild(opt1);
-
-            const opt2 = document.createElement('option');
-            opt2.value = s;
-            opt2.textContent = s;
-            if (execSel) execSel.appendChild(opt2);
+            if (stratSel) {
+                const opt1 = document.createElement('option');
+                opt1.value = s;
+                opt1.textContent = s;
+                stratSel.appendChild(opt1);
+            }
+            else {
+                const opt2 = document.createElement('option');
+                opt2.value = s;
+                opt2.textContent = s;
+                execSel.appendChild(opt2);
+            }
         });
 
         const symRes = await fetch('/api/symbols');
         const syms = await symRes.json();
-        const symSel = document.getElementById('sel-symbol');
-        if (symSel) {
-            symSel.innerHTML = '';
-            syms.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.uic;
-                opt.textContent = s.name;
-                symSel.appendChild(opt);
-            });
-        }
+
+
+        ['sel-symbol-auto', 'sel-symbol-manual'].forEach(id => {
+            const symSel = document.getElementById(id);
+            if (symSel) {
+                symSel.innerHTML = '';
+                syms.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.uic;
+                    opt.textContent = s.name;
+                    symSel.appendChild(opt);
+                });
+            }
+        });
     } catch (e) {
         console.error("Failed to load init data", e);
     }
@@ -475,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadStrategiesAndSymbols();
     loadReportList();
     loadConfig();
+    refreshBalance();
 
     // Poll auth every 60s
     setInterval(checkAuth, 60000);
