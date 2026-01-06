@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="tabs">
+    <button class="tab-btn active" onclick="openTab(event, 'Monitor')">Monitor</button>
+    <button class="tab-btn" onclick="openTab(event, 'Auto')">Auto Strategies</button>
+    <button class="tab-btn" onclick="openTab(event, 'Manual')">Manual Trade</button>
+    <button class="tab-btn" onclick="openTab(event, 'Reports')">Reports</button>
+</div>
+
+<div id="Monitor" class="tab-content" style="display: block;">
+    <div class="card-row">
+        <div class="card">
+            <h2>Account Status</h2>
+            <button id="btn-balance" onclick="refreshBalance()">Refresh Balance</button>
+            <div id="balance-display" class="status-box">...</div>
+        </div>
+        <div class="card">
+            <h2>Data Sync</h2>
+            <button id="btn-sync" class="warning" onclick="syncData()">Sync GPW Data</button>
+            <div id="sync-status" class="status-box"></div>
+        </div>
+    </div>
+    <div class="log-container">
+        <h3>System Logs</h3>
+        <div id="monitor-log" class="log-box"></div>
+    </div>
+</div>
+
+<div id="Auto" class="tab-content">
+    <div class="split-view">
+        <div class="sidebar">
+            <div class="form-group">
+                <label>Strategy</label>
+                <select id="sel-strat"></select>
+            </div>
+            <div class="form-group">
+                <label>Instrument</label>
+                <select id="sel-symbol-auto"></select>
+            </div>
+            <button class="primary big-btn" onclick="analyze()">Analyze / Generate Signal</button>
+        </div>
+        <div class="main-content">
+            <h3>Analysis Result</h3>
+            <div id="signal-result" class="signal-box">...</div>
+            <p id="signal-explain"></p>
+
+            <div class="trade-actions">
+                <div class="form-group inline">
+                    <label>Amount:</label>
+                    <input type="number" id="auto-amount" value="1">
+                </div>
+                <button id="btn-auto-trade" class="error" disabled onclick="executeAutoTrade()">Execute Trade</button>
+            </div>
+            <div id="auto-log" class="log-box small"></div>
+        </div>
+    </div>
+</div>
+
+<div id="Manual" class="tab-content">
+    <div class="form-container">
+        <h2>Manual Order Form</h2>
+        <div class="form-group">
+            <label>Instrument</label>
+            <select id="sel-symbol-manual"></select>
+        </div>
+        <div class="form-group">
+            <label>Side</label>
+            <div class="radio-group">
+                <label><input type="radio" name="side" value="Buy" checked> Buy</label>
+                <label><input type="radio" name="side" value="Sell"> Sell</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Amount</label>
+            <input type="number" id="man-amount" value="1">
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <select id="man-type" onchange="togglePriceInput()">
+                <option value="Market">Market</option>
+                <option value="Limit">Limit</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Price (Limit)</label>
+            <input type="number" id="man-price" disabled step="0.01">
+        </div>
+        <button class="success big-btn" onclick="executeManualTrade()">Place Order</button>
+
+        <div id="man-log" class="log-box"></div>
+    </div>
+</div>
+{% endblock %}

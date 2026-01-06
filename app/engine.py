@@ -3,7 +3,7 @@ Core business logic for Live Execution.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -106,7 +106,7 @@ class LiveTrader:
         last_row = df_sig.iloc[-1]
 
         # Convert last_row to dict to include all metrics (momentum, z-score, etc.)
-        result = last_row.to_dict()
+        result = cast("dict[str, Any]", last_row.to_dict())
         # Ensure primitive types for JSON/usage
         result["date"] = str(result["date"])
         result["signal"] = int(result["signal"])

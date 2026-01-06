@@ -34,6 +34,8 @@ repos:
           - python-dotenv>=1.0
           - textual>=0.82     # provides textual.app/containers/widgets
           - matplotlib>=3.7
+          - Flask>=3.0.0
+          - types-Flask>=1.1.6
         args:
           - --python-version=3.12
           - --config-file=mypy.ini

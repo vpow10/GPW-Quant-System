@@ -1,7 +1,7 @@
 from typing import Any
 
 from strategies.base import StrategyBase
-from strategies.hybrid_lstm_strategy import HybridLSTMStrategy
+from strategies.hybrid_lstm_strategy import HybridLSTMRegimeBlendStrategy
 from strategies.lstm_strategy import LSTMStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.momentum import MomentumStrategy
@@ -127,7 +127,7 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
 STRATEGY_REGISTRY: dict[str, type[StrategyBase]] = {
     "momentum": MomentumStrategy,
     "mean_reversion": MeanReversionStrategy,
-    "hybrid_lstm_10d": HybridLSTMStrategy,
+    "hybrid_lstm_10d": HybridLSTMRegimeBlendStrategy,
     "lstm": LSTMStrategy,
     "momentum_tsmom_20d": MomentumStrategy,
     "momentum_tsmom_60d": MomentumStrategy,
