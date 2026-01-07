@@ -171,11 +171,23 @@ def _compute_block(reg_df: pd.DataFrame, trading_days: int, invested_mask: pd.Se
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--daily-csv", type=Path, required=True)
+    ap.add_argument("--daily-csv", type=Path, default=None, help="Single daily CSV file.")
+    ap.add_argument(
+        "--batch-dir",
+        type=Path,
+        default=None,
+        help="Directory to recursively search for *.daily.csv files.",
+    )
     ap.add_argument(
         "--benchmark", type=Path, required=True, help="CSV or Parquet with benchmark prices."
     )
     ap.add_argument("--outdir", type=Path, default=Path("regime_out"))
+    ap.add_argument(
+        "--analysis-dir",
+        type=Path,
+        default=Path("data/analysis/regime"),
+        help="Root output directory for batch mode.",
+    )
     ap.add_argument("--ma-window", type=int, default=200)
     ap.add_argument("--slope-window", type=int, default=20)
     ap.add_argument("--trading-days", type=int, default=252)
@@ -187,16 +199,68 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    outdir: Path = args.outdir
+    args = ap.parse_args()
+
+    if args.batch_dir:
+        if not args.batch_dir.exists():
+            raise SystemExit(f"Batch directory not found: {args.batch_dir}")
+
+        daily_files = list(args.batch_dir.rglob("*.daily.csv"))
+        if not daily_files:
+            print(f"No *.daily.csv files found in {args.batch_dir}")
+            return
+
+        print(f"Found {len(daily_files)} daily files. Starting batch analysis...")
+
+        for d_file in daily_files:
+            tag = d_file.name.replace(".daily.csv", "")
+
+            out_sub = args.analysis_dir / tag
+            print(f"Analyzing {d_file.name} -> {out_sub}")
+
+            run_analysis(
+                daily_csv=d_file,
+                benchmark_path=args.benchmark,
+                outdir=out_sub,
+                ma_window=args.ma_window,
+                slope_window=args.slope_window,
+                trading_days=args.trading_days,
+                invested_threshold=args.invested_threshold,
+            )
+
+    else:
+        # Single file mode
+        if not args.daily_csv:
+            ap.error("--daily-csv is required if --batch-dir is not specified.")
+
+        run_analysis(
+            daily_csv=args.daily_csv,
+            benchmark_path=args.benchmark,
+            outdir=args.outdir,
+            ma_window=args.ma_window,
+            slope_window=args.slope_window,
+            trading_days=args.trading_days,
+            invested_threshold=args.invested_threshold,
+        )
+
+
+def run_analysis(
+    daily_csv: Path,
+    benchmark_path: Path,
+    outdir: Path,
+    ma_window: int,
+    slope_window: int,
+    trading_days: int,
+    invested_threshold: float,
+) -> None:
     outdir.mkdir(parents=True, exist_ok=True)
     plots = outdir / "plots"
     plots.mkdir(parents=True, exist_ok=True)
 
-    daily = pd.read_csv(args.daily_csv)
+    daily = pd.read_csv(daily_csv)
     if "date" not in daily.columns or "net_ret" not in daily.columns:
-        raise SystemExit(
-            f"Daily CSV must contain at least ['date','net_ret']. Available: {daily.columns.tolist()}"
-        )
+        print(f"Skipping {daily_csv}: missing ['date', 'net_ret']")
+        return
 
     daily["date"] = pd.to_datetime(daily["date"], errors="coerce")
     daily = daily.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
@@ -214,10 +278,10 @@ def main() -> None:
         if c not in daily.columns:
             daily[c] = np.nan
 
-    bm = _load_benchmark_prices(args.benchmark)
+    bm = _load_benchmark_prices(benchmark_path)
     bm["bm_ret_from_close"] = bm["close"].pct_change().fillna(0.0)
-    bm["ma"] = bm["close"].rolling(args.ma_window).mean()
-    bm["ma_slope"] = bm["ma"].diff(args.slope_window)
+    bm["ma"] = bm["close"].rolling(ma_window).mean()
+    bm["ma_slope"] = bm["ma"].diff(slope_window)
 
     m = pd.merge(
         daily,
@@ -226,7 +290,8 @@ def main() -> None:
         how="inner",
     )
     if m.empty:
-        raise SystemExit("No overlapping dates between daily and benchmark.")
+        print(f"Skipping {daily_csv}: no overlapping dates with benchmark.")
+        return
 
     m["bm_ret_used"] = np.where(m["bm_ret"].notna(), m["bm_ret"], m["bm_ret_from_close"])
     m["active_ret_used"] = np.where(
@@ -253,7 +318,7 @@ def main() -> None:
     plt.plot(m["date"], m["equity_active"], label="Active (strategy - benchmark)")
     plt.xlabel("Date")
     plt.ylabel("Equity (rebased)")
-    plt.title("Equity curves (rebased to 1.0)")
+    plt.title(f"Equity curves ({daily_csv.name})")
     plt.legend()
     plt.tight_layout()
     plt.savefig(plots / "equity_curves.png", dpi=150)
@@ -273,7 +338,7 @@ def main() -> None:
             continue
 
         invested = pd.to_numeric(g["gross_leverage"], errors="coerce").fillna(0.0) > float(
-            args.invested_threshold
+            invested_threshold
         )
 
         avg_gross_lev = float(pd.to_numeric(g["gross_leverage"], errors="coerce").mean())
@@ -283,17 +348,17 @@ def main() -> None:
         frac_invested = float(invested.mean())
 
         gross_ann_ret, _, _ = (
-            ann_stats_cagr(g["gross_ret"], args.trading_days)
+            ann_stats_cagr(g["gross_ret"], trading_days)
             if g["gross_ret"].notna().any()
             else (float("nan"), float("nan"), float("nan"))
         )
         cost_ann_ret, _, _ = (
-            ann_stats_cagr(-g["cost_ret"], args.trading_days)
+            ann_stats_cagr(-g["cost_ret"], trading_days)
             if g["cost_ret"].notna().any()
             else (float("nan"), float("nan"), float("nan"))
         )
 
-        beta_s, alpha_s = beta_alpha(g["net_ret"], g["bm_ret_used"], args.trading_days)
+        beta_s, alpha_s = beta_alpha(g["net_ret"], g["bm_ret_used"], trading_days)
 
         clean = pd.concat(
             [_clean_series(g["net_ret"]), _clean_series(g["bm_ret_used"])],
@@ -307,7 +372,7 @@ def main() -> None:
 
         for series_name, (col, _) in series_defs.items():
             reg_df = pd.DataFrame({"r": g[col]})
-            met = _compute_block(reg_df, args.trading_days, invested_mask=invested)
+            met = _compute_block(reg_df, trading_days, invested_mask=invested)
 
             dd_masked = _masked_max_dd(g[col], m["regime"] == reg)
 
@@ -416,7 +481,7 @@ def main() -> None:
     plt.xticks(x, reg_order)
     plt.xlabel("Regime")
     plt.ylabel("Annualized return (CAGR-style)")
-    plt.title("Annualized return by regime (strategy vs benchmark vs active)")
+    plt.title(f"Annualized return by regime ({daily_csv.name})")
     plt.legend()
     plt.tight_layout()
     plt.savefig(plots / "regime_bar_ann_return.png", dpi=150)
@@ -429,7 +494,7 @@ def main() -> None:
     plt.xticks(x, reg_order)
     plt.xlabel("Regime")
     plt.ylabel("Sharpe (strategy/benchmark) or IR (active)")
-    plt.title("Risk-adjusted performance by regime")
+    plt.title(f"Risk-adjusted performance ({daily_csv.name})")
     plt.legend()
     plt.tight_layout()
     plt.savefig(plots / "regime_bar_sharpe_info.png", dpi=150)
@@ -451,13 +516,13 @@ def main() -> None:
     plt.bar(x + width / 2, strat_only["avg_turnover"].to_numpy(), width, label="avg_turnover")
     plt.xticks(x, reg_order)
     plt.xlabel("Regime")
-    plt.title("Exposure and turnover by regime (strategy)")
+    plt.title(f"Exposure/turnover by regime ({daily_csv.name})")
     plt.legend()
     plt.tight_layout()
     plt.savefig(plots / "regime_bar_turnover_leverage.png", dpi=150)
     plt.close()
 
-    print(f"Wrote outputs to: {outdir.resolve()}")
+    print(f"[{daily_csv.name}] Done. Output in {outdir}")
 
 
 if __name__ == "__main__":

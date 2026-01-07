@@ -35,3 +35,6 @@ data/backtests/*.txt
 data/backtests/stress/
 data/backtests/strategies/
 data/backtests/all_hybrids
+data/backtests/*.csv
+data/backtests/variants/
+data/analysis/regime/
