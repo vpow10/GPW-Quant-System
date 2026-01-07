@@ -134,15 +134,15 @@ async function loadAnalysisPlots() {
 
     container.innerHTML = 'Loading plots...';
 
-    // Plot descriptions (Polish)
+    // Plot descriptions (English)
     const descriptions = {
-        "equity_curves.png": "<strong>Krzywe kapitału (Equity Curves):</strong> Przedstawiają skumulowany wynik inwestycji w czasie, startując od poziomu 1.0 (100%).<br>• <strong>Strategy (net):</strong> Wynik wybranej strategii po uwzględnieniu kosztów transakcyjnych i poślizgów cenowych.<br>• <strong>Benchmark (B&H):</strong> Wynik strategii 'Kup i Trzymaj' dla indeksu odniesienia (WIG20).<br>• <strong>Active:</strong> 'Aktywny zwrot', czyli różnica między wynikiem strategii a benchmarkiem. Pokazuje wartość dodaną (alpha).",
+        "equity_curves.png": "<strong>Equity Curves:</strong> Shows the cumulative investment result over time, starting from 1.0 (100%).<br>• <strong>Strategy (net):</strong> Result of the selected strategy after transaction costs and slippage.<br>• <strong>Benchmark (B&H):</strong> Result of the 'Buy and Hold' strategy for the reference index (WIG20).<br>• <strong>Active:</strong> 'Active Return', i.e., the difference between the strategy result and the benchmark. Shows value added (alpha).",
 
-        "regime_bar_ann_return.png": "<strong>Zannualizowana stopa zwrotu (CAGR):</strong> Wynik w podziale na fazy rynku (Reżimy).<br>• <strong>Regime (Reżim):</strong> Kondycja rynku określana na podstawie średniej ruchomej. <em>BULL</em> (Hossa - cena rośnie), <em>BEAR</em> (Bessa - cena spada), <em>NORMAL</em> (Konsolidacja).<br>• Wykres pokazuje, jak strategia radzi sobie w trudnych (Bessa) i dobrych (Hossa) okresach.",
+        "regime_bar_ann_return.png": "<strong>Annualized Return (CAGR):</strong> Result broken down by market phases (Regimes).<br>• <strong>Regime:</strong> Market condition determined by moving average. <em>BULL</em> (Uptrend), <em>BEAR</em> (Downtrend), <em>NORMAL</em> (Consolidation).<br>• The chart shows how the strategy performs in difficult (Bear) and good (Bull) periods.",
 
-        "regime_bar_sharpe_info.png": "<strong>Efektywność skorygowana o ryzyko:</strong><br>• <strong>Sharpe Ratio:</strong> Miarodajna ocena zysku w relacji do ryzyka (zmienności) dla Strategii i Benchmarku. Wyższe wartości oznaczają lepszy, stabilniejszy wynik.<br>• <strong>Information Ratio:</strong> Mierzy stabilność generowania nadwyżki nad benchmarkiem (dla Active Return).",
+        "regime_bar_sharpe_info.png": "<strong>Risk-Adjusted Efficiency:</strong><br>• <strong>Sharpe Ratio:</strong> Measure of return relative to risk (volatility) for Strategy and Benchmark. Higher values mean better, more stable results.<br>• <strong>Information Ratio:</strong> Measures the stability of generating excess returns over the benchmark (for Active Return).",
 
-        "regime_bar_turnover_leverage.png": "<strong>Ekspozycja i obrót portfela:</strong><br>• <strong>Avg Gross Leverage:</strong> Średnie zaangażowanie kapitału. Wartość 1.0 to 100% w akcjach. Wartości bliskie 0 oznaczają ucieczkę do gotówki (Cash) w danym reżimie.<br>• <strong>Avg Turnover:</strong> Średni obrót portfela. Wysoki słupek oznacza częste zmiany pozycji (i wyższe koszty)."
+        "regime_bar_turnover_leverage.png": "<strong>Exposure and Portfolio Turnover:</strong><br>• <strong>Avg Gross Leverage:</strong> Average capital exposure. A value of 1.0 means 100% in stocks. Values close to 0 mean flight to cash in a given regime.<br>• <strong>Avg Turnover:</strong> Average portfolio turnover. A high bar means frequent position changes (and higher costs)."
     };
 
     try {
