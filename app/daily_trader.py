@@ -17,23 +17,23 @@ from app.engine import LiveTrader
 load_dotenv()
 
 
-def get_live_usd_rate() -> float | None:
+def get_live_eur_rate() -> float | None:
     """
-    Fetches the current average USD exchange rate from NBP API.
-    Returns float rate (e.g. 4.0). Returns None on failure.
+    Fetches the current average EUR exchange rate from NBP API.
+    Returns float rate (e.g. 4.3). Returns None on failure.
     """
-    url = "http://api.nbp.pl/api/exchangerates/rates/a/usd/?format=json"
+    url = "http://api.nbp.pl/api/exchangerates/rates/a/eur/?format=json"
     try:
         # Timeout 5s is usually enough for NBP
         with httpx.Client(timeout=5.0) as client:
             resp = client.get(url)
             resp.raise_for_status()
             data = resp.json()
-            # data structure: {"rates": [{"mid": 3.95, ...}]}
+            # data structure: {"rates": [{"mid": 4.3, ...}]}
             mid = data["rates"][0]["mid"]
             return float(mid)
     except Exception as e:
-        print(f"[!] Failed to fetch live USD rate: {e}")
+        print(f"[!] Failed to fetch live EUR rate: {e}")
         return None
 
 
@@ -82,28 +82,28 @@ async def main():
         "--max-capital",
         type=float,
         default=500000.0,
-        help="Maximum capital (USD) to consider for trading. Defaults to 500k.",
+        help="Maximum capital (EUR) to consider for trading. Defaults to 500k.",
     )
     parser.add_argument(
         "--max-daily-spend",
         type=float,
         default=50000.0,
-        help="Maximum amount (USD) to spend on new entries per day. Defaults to 50k.",
+        help="Maximum amount (EUR) to spend on new entries per day. Defaults to 50k.",
     )
     args = parser.parse_args()
 
     # Fetch Live Rate
-    print("Fetching live USD rate from NBP...")
-    live_rate = get_live_usd_rate()
+    print("Fetching live EUR rate from NBP...")
+    live_rate = get_live_eur_rate()
     if live_rate:
         fx_rate = live_rate
-        print(f"Live USD Rate: {fx_rate:.4f} PLN")
+        print(f"Live EUR Rate: {fx_rate:.4f} PLN")
     else:
-        fx_rate = 4.0
+        fx_rate = 4.3
         print(f"[!] Using Fallback FX Rate: {fx_rate:.4f} PLN")
 
-    print(f"Max Capital    : ${args.max_capital:,.2f}")
-    print(f"Max Daily Spend: ${args.max_daily_spend:,.2f}")
+    print(f"Max Capital    : €{args.max_capital:,.2f}")
+    print(f"Max Daily Spend: €{args.max_daily_spend:,.2f}")
     print(f"FX Rate        : {fx_rate}")
 
     trader = LiveTrader()
@@ -241,15 +241,15 @@ async def main():
             # (which we tried to parse from View, might be 0)
             pass
 
-    # Convert Exposure to USD
-    current_exposure_usd = calculated_exposure_pln / fx_rate
+    # Convert Exposure to EUR
+    current_exposure_eur = calculated_exposure_pln / fx_rate
 
-    global_remaining = args.max_capital - current_exposure_usd
+    global_remaining = args.max_capital - current_exposure_eur
 
     print("\n--- Limit Check (Recalculated) ---")
-    print(f"Calc Exposure  : {calculated_exposure_pln:,.2f} PLN (~${current_exposure_usd:,.2f})")
-    print(f"Max Exposure Cap: ${args.max_capital:,.2f}")
-    print(f"Exposure Remain : ${global_remaining:,.2f}")
+    print(f"Calc Exposure  : {calculated_exposure_pln:,.2f} PLN (~€{current_exposure_eur:,.2f})")
+    print(f"Max Exposure Cap: €{args.max_capital:,.2f}")
+    print(f"Exposure Remain : €{global_remaining:,.2f}")
 
     if args.auto_allocate or args.execute:
         if global_remaining <= 0:
@@ -299,16 +299,16 @@ async def main():
             final_daily_alloc = capped_2 * 0.95  # Safety buffer
 
             print(
-                f"\nAllocating ${final_daily_alloc:,.2f} (Base: ${base_alloc_amt:,.2f}, GlobalRem: ${global_remaining:,.2f}, DailyCap: ${args.max_daily_spend:,.2f})"
+                f"\nAllocating €{final_daily_alloc:,.2f} (Base: €{base_alloc_amt:,.2f}, GlobalRem: €{global_remaining:,.2f}, DailyCap: €{args.max_daily_spend:,.2f})"
             )
 
             for pick in valid_entries:
                 score = get_rank_score(pick)
                 weight = score / total_score
-                allocated_usd = final_daily_alloc * weight
+                allocated_eur = final_daily_alloc * weight
 
-                # Convert USD -> PLN
-                allocated_pln = allocated_usd * fx_rate
+                # Convert EUR -> PLN
+                allocated_pln = allocated_eur * fx_rate
 
                 price = pick["close"]
                 qty = int(allocated_pln / price)
@@ -323,7 +323,7 @@ async def main():
                             "side": side,
                             "amount": qty,
                             "price": price,
-                            "reason": f"Entry {pick['action']} (w={weight:.1%}) [${allocated_usd:.0f} -> {allocated_pln:.0f} PLN]",
+                            "reason": f"Entry {pick['action']} (w={weight:.1%}) [€{allocated_eur:.0f} -> {allocated_pln:.0f} PLN]",
                         }
                     )
     elif entries:
