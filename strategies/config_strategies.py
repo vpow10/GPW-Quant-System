@@ -5,6 +5,7 @@ from strategies.hybrid_lstm_strategy import HybridLSTMRegimeBlendStrategy
 from strategies.lstm_strategy import LSTMStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.momentum import MomentumStrategy
+from strategies.rsi import RSIStrategy
 
 # best strategies marked with S/A tier comments, rest honestly garbage
 STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
@@ -42,6 +43,48 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "col_close": "close",
         "long_only": False,
         "short_only": False,
+    },
+    "rsi_14d_basic": {
+        "period": 14,
+        "lower_bound": 30.0,
+        "upper_bound": 70.0,
+        "col_close": "close",
+        "long_only": False,
+    },
+    "rsi_14d_longonly": {
+        "period": 14,
+        "lower_bound": 30.0,
+        "upper_bound": 70.0,
+        "col_close": "close",
+        "long_only": True,
+    },
+    "rsi_7d": {
+        "period": 7,
+        "lower_bound": 30.0,
+        "upper_bound": 70.0,
+        "col_close": "close",
+        "long_only": False,
+    },
+    "rsi_7d_longonly": {
+        "period": 7,
+        "lower_bound": 30.0,
+        "upper_bound": 70.0,
+        "col_close": "close",
+        "long_only": True,
+    },
+    "rsi_30d": {
+        "period": 30,
+        "lower_bound": 30.0,
+        "upper_bound": 70.0,
+        "col_close": "close",
+        "long_only": False,
+    },
+    "rsi_30d_longonly": {
+        "period": 30,
+        "lower_bound": 30.0,
+        "upper_bound": 70.0,
+        "col_close": "close",
+        "long_only": True,
     },
     "momentum_tsmom_60d": {
         "lookback": 60,  # ~3 months
@@ -140,4 +183,10 @@ STRATEGY_REGISTRY: dict[str, type[StrategyBase]] = {
     "mean_reversion_50d_longonly": MeanReversionStrategy,
     "mean_reversion_5d_longonly": MeanReversionStrategy,
     "mean_reversion_20d_shortonly": MeanReversionStrategy,
+    "rsi_14d_basic": RSIStrategy,
+    "rsi_14d_longonly": RSIStrategy,
+    "rsi_7d": RSIStrategy,
+    "rsi_7d_longonly": RSIStrategy,
+    "rsi_30d": RSIStrategy,
+    "rsi_30d_longonly": RSIStrategy,
 }
