@@ -104,6 +104,94 @@ async function loadStrategiesAndSymbols() {
     }
 }
 
+async function loadAnalyzedStrategies() {
+    try {
+        const res = await fetch('/api/analysis/list');
+        const strats = await res.json();
+
+        const sel = document.getElementById('sel-strat-analysis');
+        if (!sel) return;
+
+        sel.innerHTML = '';
+        strats.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            sel.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("Failed to load analyzed strategies", e);
+    }
+}
+
+async function loadAnalysisPlots() {
+    const strat = document.getElementById('sel-strat-analysis').value;
+    const container = document.getElementById('analysis-plots');
+    const title = document.getElementById('report-title');
+    if (title) title.textContent = `Analysis: ${strat}`;
+
+    if (!strat) return alert("No strategy selected");
+
+    container.innerHTML = 'Loading plots...';
+
+    // Plot descriptions (Polish)
+    const descriptions = {
+        "equity_curves.png": "<strong>Krzywe kapitału (Equity Curves):</strong> Przedstawiają skumulowany wynik inwestycji w czasie, startując od poziomu 1.0 (100%).<br>• <strong>Strategy (net):</strong> Wynik wybranej strategii po uwzględnieniu kosztów transakcyjnych i poślizgów cenowych.<br>• <strong>Benchmark (B&H):</strong> Wynik strategii 'Kup i Trzymaj' dla indeksu odniesienia (WIG20).<br>• <strong>Active:</strong> 'Aktywny zwrot', czyli różnica między wynikiem strategii a benchmarkiem. Pokazuje wartość dodaną (alpha).",
+
+        "regime_bar_ann_return.png": "<strong>Zannualizowana stopa zwrotu (CAGR):</strong> Wynik w podziale na fazy rynku (Reżimy).<br>• <strong>Regime (Reżim):</strong> Kondycja rynku określana na podstawie średniej ruchomej. <em>BULL</em> (Hossa - cena rośnie), <em>BEAR</em> (Bessa - cena spada), <em>NORMAL</em> (Konsolidacja).<br>• Wykres pokazuje, jak strategia radzi sobie w trudnych (Bessa) i dobrych (Hossa) okresach.",
+
+        "regime_bar_sharpe_info.png": "<strong>Efektywność skorygowana o ryzyko:</strong><br>• <strong>Sharpe Ratio:</strong> Miarodajna ocena zysku w relacji do ryzyka (zmienności) dla Strategii i Benchmarku. Wyższe wartości oznaczają lepszy, stabilniejszy wynik.<br>• <strong>Information Ratio:</strong> Mierzy stabilność generowania nadwyżki nad benchmarkiem (dla Active Return).",
+
+        "regime_bar_turnover_leverage.png": "<strong>Ekspozycja i obrót portfela:</strong><br>• <strong>Avg Gross Leverage:</strong> Średnie zaangażowanie kapitału. Wartość 1.0 to 100% w akcjach. Wartości bliskie 0 oznaczają ucieczkę do gotówki (Cash) w danym reżimie.<br>• <strong>Avg Turnover:</strong> Średni obrót portfela. Wysoki słupek oznacza częste zmiany pozycji (i wyższe koszty)."
+    };
+
+    try {
+        const res = await fetch(`/api/analysis/plots/${strat}`);
+        const files = await res.json();
+
+        if (files.error) {
+            container.textContent = `Error: ${files.error}`;
+            return;
+        }
+
+        if (!files || files.length === 0) {
+            container.textContent = "No plots found for this strategy.";
+            return;
+        }
+
+        container.innerHTML = '';
+        files.forEach(f => {
+            // Create wrapper for plot
+            const div = document.createElement('div');
+            div.className = "plot-wrapper";
+            div.style = "background: #252526; padding: 10px; border-radius: 5px;";
+
+            // Plot title from filename
+            const title = document.createElement('h4');
+            title.textContent = f.replace('.png', '').replace(/_/g, ' ');
+            title.style = "margin-top: 0; color: #ccc; margin-bottom: 5px;";
+
+            // Description
+            const desc = document.createElement('p');
+            desc.style = "font-size: 0.9em; color: #aaa; margin-bottom: 10px; font-style: normal; line-height: 1.4;";
+            desc.innerHTML = descriptions[f] || "";
+
+            // Image
+            const img = document.createElement('img');
+            img.src = `/api/analysis/image/${strat}/${f}`;
+            img.style = "max-width: 100%; height: auto; border: 1px solid #444;";
+
+            div.appendChild(title);
+            div.appendChild(desc);
+            div.appendChild(img);
+            container.appendChild(div);
+        });
+
+    } catch (e) {
+        container.textContent = `Error loading plots: ${e}`;
+    }
+}
+
 // Auto Strategy
 let lastSignal = null;
 
@@ -208,73 +296,7 @@ async function executeManualTrade() {
     await placeTrade(uic, side, amount, 'man-log', type, price);
 }
 
-// Report Logic
-async function loadReportList() {
-    const list = document.getElementById('report-list');
-    list.innerHTML = '<li>Loading...</li>';
-    try {
-        const res = await fetch('/api/reports');
-        const files = await res.json();
-        list.innerHTML = '';
-        if (files.length === 0) {
-            list.innerHTML = '<li>No reports found.</li>';
-            return;
-        }
 
-        files.forEach(f => {
-            const li = document.createElement('li');
-            li.innerHTML = `<a href="#" onclick="loadReport('${f}'); return false;">${f}</a>`;
-            li.style.padding = '5px 0';
-            list.appendChild(li);
-        });
-    } catch (e) {
-        list.innerHTML = `<li>Error: ${e}</li>`;
-    }
-}
-
-async function loadReport(filename) {
-    const viewer = document.getElementById('report-viewer');
-    const title = document.getElementById('report-title');
-    title.textContent = `Report: ${filename}`;
-    viewer.innerHTML = 'Loading content...';
-
-    try {
-        const res = await fetch(`/api/reports/${filename}`);
-        if (!res.ok) throw new Error("Failed to load");
-        const data = await res.json();
-
-        // build table
-        const rows = data.data; // list of lists
-        if (!rows || rows.length === 0) {
-            viewer.textContent = "Empty file.";
-            return;
-        }
-
-        let html = '<table class="report-table" style="width:100%; border-collapse: collapse;">';
-        // Header
-        html += '<thead><tr>';
-        rows[0].forEach(cell => {
-            html += `<th style="border: 1px solid #444; padding: 8px; background: #333; text-align: left;">${cell}</th>`;
-        });
-        html += '</tr></thead>';
-
-        // Body
-        html += '<tbody>';
-        for (let i = 1; i < rows.length; i++) {
-            html += '<tr>';
-            rows[i].forEach(cell => {
-                html += `<td style="border: 1px solid #444; padding: 8px;">${cell}</td>`;
-            });
-            html += '</tr>';
-        }
-        html += '</tbody></table>';
-
-        viewer.innerHTML = html;
-
-    } catch (e) {
-        viewer.textContent = `Error: ${e}`;
-    }
-}
 
 async function placeTrade(uic, side, amount, logId, type = 'Market', price = null) {
     const logBox = logId;
@@ -479,7 +501,7 @@ async function pollLogs() {
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     loadStrategiesAndSymbols();
-    loadReportList();
+    loadAnalyzedStrategies();
     loadConfig();
     refreshBalance();
 

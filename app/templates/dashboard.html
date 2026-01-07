@@ -92,6 +92,24 @@
         <div id="man-log" class="log-box"></div>
     </div>
 </div>
+</div>
+
+<div id="Reports" class="tab-content" style="display: none;">
+    <div class="split-view">
+        <div class="sidebar" style="min-width: 250px;">
+            <h3>Strategy Analysis</h3>
+            <div class="form-group">
+                <label>Select Strategy</label>
+                <select id="sel-strat-analysis"></select>
+            </div>
+            <button class="primary big-btn" onclick="loadAnalysisPlots()">Show Plots</button>
+        </div>
+        <div class="main-content">
+            <h3 id="report-title">Analysis Plots</h3>
+            <div id="analysis-plots" style="display: flex; flex-direction: column; gap: 20px;"></div>
+        </div>
+    </div>
+</div>
 
 <div id="Execution" class="tab-content">
     <div class="header">

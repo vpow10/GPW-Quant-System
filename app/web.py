@@ -189,6 +189,61 @@ def get_report(filename):
         return jsonify({"error": str(e)}), 404
 
 
+@app.route("/api/analysis/list")
+def list_analyzed_strategies():
+    import os
+
+    analysis_dir = os.path.join("data", "analysis", "regime")
+    try:
+        if not os.path.exists(analysis_dir):
+            return jsonify([])
+
+        # List directories in analysis_dir
+        strats = [
+            d for d in os.listdir(analysis_dir) if os.path.isdir(os.path.join(analysis_dir, d))
+        ]
+        return jsonify(sorted(strats))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/analysis/plots/<strategy_name>")
+def list_strategy_plots(strategy_name):
+    import os
+
+    # Sanitize strategy name to prevent directory traversal
+    if ".." in strategy_name or "/" in strategy_name or "\\" in strategy_name:
+        return jsonify({"error": "Invalid strategy name"}), 400
+
+    plots_dir = os.path.join("data", "analysis", "regime", strategy_name, "plots")
+    try:
+        if not os.path.exists(plots_dir):
+            return jsonify([])
+
+        files = [f for f in os.listdir(plots_dir) if f.endswith(".png")]
+        return jsonify(sorted(files))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/analysis/image/<strategy_name>/<plot_name>")
+def get_analysis_image(strategy_name, plot_name):
+    import os
+
+    from flask import send_file
+
+    if ".." in strategy_name or "/" in strategy_name:
+        return jsonify({"error": "Invalid strategy name"}), 400
+    if ".." in plot_name or "/" in plot_name:
+        return jsonify({"error": "Invalid plot name"}), 400
+
+    path = os.path.join("data", "analysis", "regime", strategy_name, "plots", plot_name)
+    try:
+        return send_file(os.path.abspath(path), mimetype="image/png")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 404
+
+
 @app.route("/api/config/<mode>", methods=["GET"])
 def get_config(mode):
     if mode not in ("daily", "intraday"):
