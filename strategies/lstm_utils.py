@@ -46,8 +46,8 @@ class TimeSeriesScaler:
     """
 
     def __init__(self):
-        self.mean = None
-        self.scale = None
+        self.mean: np.ndarray | None = None
+        self.scale: np.ndarray | None = None
 
     def fit(self, X: np.ndarray) -> None:
         """Compute mean and std to be used for later scaling."""
@@ -60,7 +60,8 @@ class TimeSeriesScaler:
         """Perform standardization by centering and scaling."""
         if self.mean is None or self.scale is None:
             raise ValueError("Scaler has not been fitted yet.")
-        return (X - self.mean) / self.scale
+        # Cast to avoid "Returning Any" error
+        return np.array((X - self.mean) / self.scale)
 
     def fit_transform(self, X: np.ndarray) -> np.ndarray:
         self.fit(X)
