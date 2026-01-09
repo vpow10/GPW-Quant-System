@@ -1,0 +1,608 @@
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : False
+[auth] Access token refreshed.
+Cash Available: 1000000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 95000.00 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  198  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  225  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Order POST failed.
+  url         : https://gateway.saxobank.com/sim/openapi/trade/v2/orders
+  status      : 429
+  content-type: application/json; charset=utf-8
+  request-id  : None
+  response    : {'ErrorCode': 'RateLimitExceeded', 'Message': 'Rate limit exceeded!'}
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : True
+Cash Available: 1000000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 95000.00 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  198  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  225  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+--- Executing Orders ---
+Executing Buy 198 x Asseco...
+  Result: {'OrderId': '5036560712'}
+Executing Buy 225 x KGHM...
+Order POST failed.
+  url         : https://gateway.saxobank.com/sim/openapi/trade/v2/orders
+  status      : 429
+  content-type: application/json; charset=utf-8
+  request-id  : None
+  response    : {'ErrorCode': 'RateLimitExceeded', 'Message': 'Rate limit exceeded!'}
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : True
+Cash Available: 1000000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 95000.00 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  198  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  225  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+--- Executing Orders ---
+Executing Buy 198 x Asseco...
+  Result: {'OrderId': '5036560714'}
+Executing Buy 225 x KGHM...
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : True
+[auth] Access token refreshed.
+Cash Available: 1000000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 95000.00 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  198  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  225  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+--- Executing Orders ---
+Executing Buy 198 x Asseco...
+  Result: {'OrderId': '5036560715'}
+Executing Buy 225 x KGHM...
+  Result: {'OrderId': '5036560716'}
+--- Starting Daily Trader ---
+Strategy     : momentum
+Auto Allocate: True
+Long Only    : True
+Execute      : True
+Cash Available: 967363.17
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating 91899.50 (Factor: 0.10) across 2 new entries.
+
+--- Planned Orders (2) ---
+Buy  192  x Asseco     @ 211.60 | Entry BUY (w=44.3%)
+Buy  218  x KGHM       @ 235.00 | Entry BUY (w=55.7%)
+
+--- Executing Orders ---
+Executing Buy 192 x Asseco...
+  Result: {'OrderId': '5036573022'}
+Executing Buy 218 x KGHM...
+  Result: {'OrderId': '5036573023'}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Portfolio Value: $1,001,514.30 (Cash: $944,825.75 + Pos: ~$56,688.55)
+Global Limit   : $500,000.00
+Global Remain  : $-501,514.30
+[!] Portfolio Value exceeds Limit. No new entries allowed.
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+Skipping Entries: No Budget Available (Portfolio Limit or No Cash).
+
+--- Planned Orders (0) ---
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Refresh token expired or missing. Please login again.
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Portfolio Value: $1,001,989.25 (Cash: $944,821.32 + Pos: ~$57,167.93)
+Global Limit   : $500,000.00
+Global Remain  : $-501,989.25
+[!] Portfolio Value exceeds Limit. No new entries allowed.
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+Skipping Entries: No Budget Available (Portfolio Limit or No Cash).
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Portfolio Value: $1,002,008.83 (Cash: $944,821.32 + Pos: ~$0.00)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $500,000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+Allocating $47,500.00 (Base: $94,482.13, GlobalRem: $500,000.00, DailyCap: $50,000.00)
+
+--- Planned Orders (2) ---
+Buy  397  x Asseco     @ 211.60 | Entry BUY (w=44.3%) [$21019 -> 84075 PLN]
+Buy  450  x KGHM       @ 235.00 | Entry BUY (w=55.7%) [$26481 -> 105925 PLN]
+
+--- Executing Orders ---
+Executing Buy 397 x Asseco...
+  Result: {'OrderId': '5036584709'}
+Executing Buy 450 x KGHM...
+  Result: {'OrderId': '5036584710'}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Portfolio Value: $1,002,008.71 (Cash: $944,821.32 + Pos: ~$0.00)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $500,000.00
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 6
+
+Allocating $47,500.00 (Base: $94,482.13, GlobalRem: $500,000.00, DailyCap: $50,000.00)
+
+--- Planned Orders (6) ---
+Buy  139  x Asseco     @ 211.60 | Entry BUY (w=15.6%) [$7389 -> 29556 PLN]
+Sell 8189 x GTC        @ 3.15 | Entry SHORT (w=13.6%) [$6449 -> 25796 PLN]
+Buy  158  x KGHM       @ 235.00 | Entry BUY (w=19.6%) [$9309 -> 37237 PLN]
+Sell 1409 x Bogdanka   @ 18.76 | Entry SHORT (w=13.9%) [$6609 -> 26434 PLN]
+Sell 5011 x PGE        @ 8.61 | Entry SHORT (w=22.7%) [$10785 -> 43140 PLN]
+Sell 3199 x Tauron     @ 8.70 | Entry SHORT (w=14.7%) [$6959 -> 27837 PLN]
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 6
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 228,525.80 PLN (~$57,131.45)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $442,868.55
+
+Allocating $47,500.00 (Base: $94,482.13, GlobalRem: $442,868.55, DailyCap: $50,000.00)
+
+--- Planned Orders (6) ---
+Buy  139  x Asseco     @ 211.60 | Entry BUY (w=15.6%) [$7389 -> 29556 PLN]
+Sell 8189 x GTC        @ 3.15 | Entry SHORT (w=13.6%) [$6449 -> 25796 PLN]
+Buy  158  x KGHM       @ 235.00 | Entry BUY (w=19.6%) [$9309 -> 37237 PLN]
+Sell 1409 x Bogdanka   @ 18.76 | Entry SHORT (w=13.9%) [$6609 -> 26434 PLN]
+Sell 5011 x PGE        @ 8.61 | Entry SHORT (w=22.7%) [$10785 -> 43140 PLN]
+Sell 3199 x Tauron     @ 8.70 | Entry SHORT (w=14.7%) [$6959 -> 27837 PLN]
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 6
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 228,525.80 PLN (~$57,131.45)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $442,868.55
+
+Allocating $47,500.00 (Base: $94,482.13, GlobalRem: $442,868.55, DailyCap: $50,000.00)
+
+--- Planned Orders (6) ---
+Buy  139  x Asseco     @ 211.60 | Entry BUY (w=15.6%) [$7389 -> 29556 PLN]
+Sell 8189 x GTC        @ 3.15 | Entry SHORT (w=13.6%) [$6449 -> 25796 PLN]
+Buy  158  x KGHM       @ 235.00 | Entry BUY (w=19.6%) [$9309 -> 37237 PLN]
+Sell 1409 x Bogdanka   @ 18.76 | Entry SHORT (w=13.9%) [$6609 -> 26434 PLN]
+Sell 5011 x PGE        @ 8.61 | Entry SHORT (w=22.7%) [$10785 -> 43140 PLN]
+Sell 3199 x Tauron     @ 8.70 | Entry SHORT (w=14.7%) [$6959 -> 27837 PLN]
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 6
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 228,525.80 PLN (~$57,131.45)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $442,868.55
+
+Allocating $47,500.00 (Base: $94,482.13, GlobalRem: $442,868.55, DailyCap: $50,000.00)
+
+--- Planned Orders (6) ---
+Buy  139  x Asseco     @ 211.60 | Entry BUY (w=15.6%) [$7389 -> 29556 PLN]
+Sell 8189 x GTC        @ 3.15 | Entry SHORT (w=13.6%) [$6449 -> 25796 PLN]
+Buy  158  x KGHM       @ 235.00 | Entry BUY (w=19.6%) [$9309 -> 37237 PLN]
+Sell 1409 x Bogdanka   @ 18.76 | Entry SHORT (w=13.9%) [$6609 -> 26434 PLN]
+Sell 5011 x PGE        @ 8.61 | Entry SHORT (w=22.7%) [$10785 -> 43140 PLN]
+Sell 3199 x Tauron     @ 8.70 | Entry SHORT (w=14.7%) [$6959 -> 27837 PLN]
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Order POST failed.
+  url         : https://gateway.saxobank.com/sim/openapi/trade/v2/orders
+  status      : 400
+  content-type: application/json; charset=utf-8
+  request-id  : None
+  response    : {'ErrorInfo': {'ErrorCode': 'NotOwned', 'Message': 'You are selling contracts you do not own or trying to close more than you currently hold. Check you are trading from the correct sub-account and have no existing orders to sell the instrument.'}}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+[auth] Access token refreshed.
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 6
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 228,525.80 PLN (~$57,131.45)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $442,868.55
+
+Allocating $47,500.00 (Base: $94,482.13, GlobalRem: $442,868.55, DailyCap: $50,000.00)
+
+--- Planned Orders (6) ---
+Buy  139  x Asseco     @ 211.60 | Entry BUY (w=15.6%) [$7389 -> 29556 PLN]
+Sell 8189 x GTC        @ 3.15 | Entry SHORT (w=13.6%) [$6449 -> 25796 PLN]
+Buy  158  x KGHM       @ 235.00 | Entry BUY (w=19.6%) [$9309 -> 37237 PLN]
+Sell 1409 x Bogdanka   @ 18.76 | Entry SHORT (w=13.9%) [$6609 -> 26434 PLN]
+Sell 5011 x PGE        @ 8.61 | Entry SHORT (w=22.7%) [$10785 -> 43140 PLN]
+Sell 3199 x Tauron     @ 8.70 | Entry SHORT (w=14.7%) [$6959 -> 27837 PLN]
+
+--- Executing Orders ---
+Executing Buy 139 x Asseco...
+  Result: {'OrderId': '5036584721'}
+Executing Sell 8189 x GTC...
+Order POST failed.
+  url         : https://gateway.saxobank.com/sim/openapi/trade/v2/orders
+  status      : 400
+  content-type: application/json; charset=utf-8
+  request-id  : None
+  response    : {'ErrorInfo': {'ErrorCode': 'NotOwned', 'Message': 'You are selling contracts you do not own or trying to close more than you currently hold. Check you are trading from the correct sub-account and have no existing orders to sell the instrument.'}}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 6
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 447,693.40 PLN (~$111,923.35)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $388,076.65
+
+Allocating $47,500.00 (Base: $88,966.01, GlobalRem: $388,076.65, DailyCap: $50,000.00)
+
+--- Planned Orders (6) ---
+Buy  139  x Asseco     @ 211.60 | Entry BUY (w=15.6%) [$7389 -> 29556 PLN]
+Sell 8189 x GTC        @ 3.15 | Entry SHORT (w=13.6%) [$6449 -> 25796 PLN]
+Buy  158  x KGHM       @ 235.00 | Entry BUY (w=19.6%) [$9309 -> 37237 PLN]
+Sell 1409 x Bogdanka   @ 18.76 | Entry SHORT (w=13.9%) [$6609 -> 26434 PLN]
+Sell 5011 x PGE        @ 8.61 | Entry SHORT (w=22.7%) [$10785 -> 43140 PLN]
+Sell 3199 x Tauron     @ 8.70 | Entry SHORT (w=14.7%) [$6959 -> 27837 PLN]
+
+--- Executing Orders ---
+Executing Buy 139 x Asseco...
+  Result: {'OrderId': '5036597639'}
+Executing Sell 8189 x GTC...
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 477,105.80 PLN (~$119,276.45)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $380,723.55
+
+Allocating $47,500.00 (Base: $88,221.93, GlobalRem: $380,723.55, DailyCap: $50,000.00)
+
+--- Planned Orders (2) ---
+Buy  397  x Asseco     @ 211.60 | Entry BUY (w=44.3%) [$21019 -> 84075 PLN]
+Buy  450  x KGHM       @ 235.00 | Entry BUY (w=55.7%) [$26481 -> 105925 PLN]
+
+--- Executing Orders ---
+Executing Buy 397 x Asseco...
+  Result: {'OrderId': '5036597669'}
+Executing Buy 450 x KGHM...
+  Result: {'OrderId': '5036597670'}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 1,327,782.00 PLN (~$331,945.50)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $168,054.50
+
+Allocating $47,500.00 (Base: $68,552.49, GlobalRem: $168,054.50, DailyCap: $50,000.00)
+
+--- Planned Orders (2) ---
+Buy  4314 x Kernel     @ 20.95 | Entry BUY (w=47.6%) [$22596 -> 90385 PLN]
+Buy  392  x KGHM       @ 253.70 | Entry BUY (w=52.4%) [$24904 -> 99615 PLN]
+
+--- Executing Orders ---
+Executing Buy 4314 x Kernel...
+  Result: {'OrderId': '5036724334'}
+Executing Buy 392 x KGHM...
+  Result: {'OrderId': '5036724335'}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 1,593,718.00 PLN (~$398,429.50)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $101,570.50
+
+Allocating $47,500.00 (Base: $63,764.90, GlobalRem: $101,570.50, DailyCap: $50,000.00)
+
+--- Planned Orders (2) ---
+Buy  16670 x Boryszew   @ 6.14 | Entry BUY (w=53.9%) [$25589 -> 102356 PLN]
+Buy  320  x KGHM       @ 273.80 | Entry BUY (w=46.1%) [$21911 -> 87644 PLN]
+
+--- Executing Orders ---
+Executing Buy 16670 x Boryszew...
+  Result: {'OrderId': '5036737344'}
+Executing Buy 320 x KGHM...
+  Result: {'OrderId': '5036737345'}
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 4
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 1,803,834.20 PLN (~$450,958.55)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $49,041.45
+
+Allocating $46,589.38 (Base: $59,183.74, GlobalRem: $49,041.45, DailyCap: $50,000.00)
+
+--- Planned Orders (4) ---
+Buy  413  x Citi Handlowy @ 107.00 | Entry BUY (w=23.8%) [$11067 -> 44270 PLN]
+Buy  7900 x Boryszew   @ 6.18 | Entry BUY (w=26.2%) [$12206 -> 48824 PLN]
+Buy  1669 x JSW        @ 22.50 | Entry BUY (w=20.2%) [$9393 -> 37574 PLN]
+Buy  199  x KGHM       @ 279.00 | Entry BUY (w=29.9%) [$13922 -> 55690 PLN]
+
+--- Executing Orders ---
+Executing Buy 413 x Citi Handlowy...
+  Result: {'OrderId': '5036742360'}
+Executing Buy 7900 x Boryszew...
+  Result: {'OrderId': '5036742361'}
+Executing Buy 1669 x JSW...
+  Result: {'OrderId': '5036742362'}
+Executing Buy 199 x KGHM...
+  Result: {'OrderId': '5036742364'}
+Fetching live USD rate from NBP...
+Live USD Rate: 3.5936 PLN
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 3.5936
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 4
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 1,990,335.38 PLN (~$553,855.57)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $-53,855.57
+[!] Max Exposure Limit reached. No new entries allowed.
+Skipping Entries: No Budget Available (Portfolio Limit or No Cash).
+
+--- Planned Orders (0) ---
+
+Fetching live USD rate from NBP...
+Live USD Rate: 3.6045 PLN
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 3.6045
+Fetching live USD rate from NBP...
+Live USD Rate: 3.6045 PLN
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 3.6045
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,091.56 PLN (~$576,804.43)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $-76,804.43
+[!] Max Exposure Limit reached. No new entries allowed.
+Skipping Entries: No Budget Available (Portfolio Limit or No Cash).
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---
+Fetching live USD rate from NBP...
+Live USD Rate: 3.6045 PLN
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 3.6045
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,091.56 PLN (~$576,804.43)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $-76,804.43
+[!] Max Exposure Limit reached. No new entries allowed.
+Skipping Entries: No Budget Available (Portfolio Limit or No Cash).
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---
+Fetching live USD rate from NBP...
+Live USD Rate: 3.6045 PLN
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 3.6045
+[auth] Access token refreshed.
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,091.56 PLN (~$576,804.43)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $-76,804.43
+[!] Max Exposure Limit reached. No new entries allowed.
+Skipping Entries: No Budget Available (Portfolio Limit or No Cash).
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,858.06 PLN (~€493,711.41)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €6,288.59
+
+Allocating €5,974.16 (Base: €54,656.92, GlobalRem: €6,288.59, DailyCap: €50,000.00)
+
+--- Planned Orders (5) ---
+Buy  15   x Asseco     @ 235.00 | Entry BUY (w=14.0%) [€838 -> 3529 PLN]
+Buy  269  x JSW        @ 23.95 | Entry BUY (w=25.6%) [€1531 -> 6450 PLN]
+Buy  19   x KGHM       @ 296.50 | Entry BUY (w=23.5%) [€1402 -> 5906 PLN]
+Buy  305  x Bogdanka   @ 19.12 | Entry BUY (w=23.2%) [€1388 -> 5848 PLN]
+Buy  34   x PKN Orlen  @ 99.75 | Entry BUY (w=13.6%) [€815 -> 3434 PLN]
+
+--- Executing Orders ---
+Executing Buy 15 x Asseco...
+  Result: {'OrderId': '5036798734'}
+Executing Buy 269 x JSW...
+  Result: {'OrderId': '5036798735'}
+Executing Buy 19 x KGHM...
+  Result: {'OrderId': '5036798736'}
+Executing Buy 305 x Bogdanka...
+  Result: {'OrderId': '5036798737'}
+Executing Buy 34 x PKN Orlen...
+  Result: {'OrderId': '5036798738'}
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,858.06 PLN (~€493,711.41)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €6,288.59
+
+Allocating €5,974.16 (Base: €54,656.92, GlobalRem: €6,288.59, DailyCap: €50,000.00)
+
+--- Planned Orders (5) ---
+Buy  15   x Asseco     @ 235.00 | Entry BUY (w=14.0%) [€838 -> 3529 PLN]
+Buy  269  x JSW        @ 23.95 | Entry BUY (w=25.6%) [€1531 -> 6450 PLN]
+Buy  19   x KGHM       @ 296.50 | Entry BUY (w=23.5%) [€1402 -> 5906 PLN]
+Buy  305  x Bogdanka   @ 19.12 | Entry BUY (w=23.2%) [€1388 -> 5848 PLN]
+Buy  34   x PKN Orlen  @ 99.75 | Entry BUY (w=13.6%) [€815 -> 3434 PLN]
+
+--- Executing Orders ---
+Executing Buy 15 x Asseco...
+  Result: {'OrderId': '5036798762'}
+Executing Buy 269 x JSW...
+  Result: {'OrderId': '5036798763'}
+Executing Buy 19 x KGHM...
+  Result: {'OrderId': '5036798765'}
+Executing Buy 305 x Bogdanka...
+  Result: {'OrderId': '5036798766'}
+Executing Buy 34 x PKN Orlen...
+  Result: {'OrderId': '5036798767'}
+
+[Report] Saved execution report to automation/daily_report.json
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,858.06 PLN (~€493,711.41)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €6,288.59
+
+Allocating €5,974.16 (Base: €54,656.92, GlobalRem: €6,288.59, DailyCap: €50,000.00)
+
+--- Planned Orders (5) ---
+Buy  15   x Asseco     @ 235.00 | Entry BUY (w=14.0%) [€838 -> 3529 PLN]
+Buy  269  x JSW        @ 23.95 | Entry BUY (w=25.6%) [€1531 -> 6450 PLN]
+Buy  19   x KGHM       @ 296.50 | Entry BUY (w=23.5%) [€1402 -> 5906 PLN]
+Buy  305  x Bogdanka   @ 19.12 | Entry BUY (w=23.2%) [€1388 -> 5848 PLN]
+Buy  34   x PKN Orlen  @ 99.75 | Entry BUY (w=13.6%) [€815 -> 3434 PLN]
+
+--- Executing Orders ---
+Executing Buy 15 x Asseco...
+  Result: {'OrderId': '5036799334'}
+Executing Buy 269 x JSW...
+  Result: {'OrderId': '5036799335'}
+Executing Buy 19 x KGHM...
+  Result: {'OrderId': '5036799336'}
+Executing Buy 305 x Bogdanka...
+  Result: {'OrderId': '5036799337'}
+Executing Buy 34 x PKN Orlen...
+  Result: {'OrderId': '5036799338'}
+
+[Report] Saved execution report to automation/daily_report.json

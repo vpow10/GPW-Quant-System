@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="tabs">
+    <button class="tab-btn active" onclick="openTab(event, 'Monitor')">Monitor</button>
+    <button class="tab-btn" onclick="openTab(event, 'Auto')">Auto Strategies</button>
+    <button class="tab-btn" onclick="openTab(event, 'Manual')">Manual Trade</button>
+    <button class="tab-btn" onclick="openTab(event, 'Reports')">Reports</button>
+    <button class="tab-btn" onclick="openTab(event, 'Execution')">Execution</button>
+</div>
+
+<div id="Monitor" class="tab-content" style="display: block;">
+    <div class="card-row">
+        <div class="card">
+            <h2>Account Status</h2>
+            <button id="btn-balance" onclick="refreshBalance()">Refresh Balance</button>
+            <div id="balance-display" class="status-box">...</div>
+        </div>
+        <div class="card">
+            <h2>Data Sync</h2>
+            <button id="btn-sync" class="warning" onclick="syncData()">Sync GPW Data</button>
+            <div id="sync-status" class="status-box"></div>
+        </div>
+    </div>
+    <div class="log-container">
+        <h3>System Logs</h3>
+        <div id="monitor-log" class="log-box"></div>
+    </div>
+</div>
+
+<div id="Auto" class="tab-content">
+    <div class="split-view">
+        <div class="sidebar">
+            <div class="form-group">
+                <label>Strategy</label>
+                <select id="sel-strat"></select>
+            </div>
+            <div class="form-group">
+                <label>Instrument</label>
+                <select id="sel-symbol-auto"></select>
+            </div>
+            <button class="primary big-btn" onclick="analyze()">Analyze / Generate Signal</button>
+        </div>
+        <div class="main-content">
+            <h3>Analysis Result</h3>
+            <div id="signal-result" class="signal-box">...</div>
+            <p id="signal-explain"></p>
+
+            <div class="trade-actions">
+                <div class="form-group inline">
+                    <label>Amount:</label>
+                    <input type="number" id="auto-amount" value="1">
+                </div>
+                <button id="btn-auto-trade" class="error" disabled onclick="executeAutoTrade()">Execute Trade</button>
+            </div>
+            <div id="auto-log" class="log-box small"></div>
+        </div>
+    </div>
+</div>
+
+<div id="Manual" class="tab-content">
+    <div class="form-container">
+        <h2>Manual Order Form</h2>
+        <div class="form-group">
+            <label>Instrument</label>
+            <select id="sel-symbol-manual"></select>
+        </div>
+        <div class="form-group">
+            <label>Side</label>
+            <div class="radio-group">
+                <label><input type="radio" name="side" value="Buy" checked> Buy</label>
+                <label><input type="radio" name="side" value="Sell"> Sell</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Amount</label>
+            <input type="number" id="man-amount" value="1">
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <select id="man-type" onchange="togglePriceInput()">
+                <option value="Market">Market</option>
+                <option value="Limit">Limit</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Price (Limit)</label>
+            <input type="number" id="man-price" disabled step="0.01">
+        </div>
+        <button class="success big-btn" onclick="executeManualTrade()">Place Order</button>
+
+        <div id="man-log" class="log-box"></div>
+    </div>
+</div>
+</div>
+
+<div id="Reports" class="tab-content" style="display: none;">
+    <div class="split-view">
+        <div class="sidebar" style="min-width: 250px;">
+            <h3>Strategy Analysis</h3>
+            <div class="form-group">
+                <label>Select Strategy</label>
+                <select id="sel-strat-analysis"></select>
+            </div>
+            <button class="primary big-btn" onclick="loadAnalysisPlots()">Show Plots</button>
+        </div>
+        <div class="main-content">
+            <h3 id="report-title">Analysis Plots</h3>
+            <div id="analysis-plots" style="display: flex; flex-direction: column; gap: 20px;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="Execution" class="tab-content">
+    <div class="header">
+        <h2>Execution Management</h2>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <label style="font-weight:bold; margin-right:10px;">Mode:</label>
+        <select id="exec-mode" onchange="switchExecMode(this.value)" style="padding: 5px; font-size: 1rem;">
+            <option value="daily" selected>Daily Trader</option>
+            <option value="intraday">Intraday Trader</option>
+        </select>
+    </div>
+
+    <div class="config-actions" style="margin-bottom: 20px;">
+        <button onclick="showConfigForm()">New Config</button>
+        <button id="btn-run-exec" onclick="runScript()" style="margin-left: 20px; background-color: #d9534f;">Run Daily
+            Trader</button>
+    </div>
+
+    <!-- Hidden Config Form -->
+    <div id="exec-config-form" class="config-box" style="display: none; margin-bottom: 20px;">
+        <h3>Configuration (<span id="config-title">daily_config.env</span>)</h3>
+        <div class="form-group">
+            <label>Strategy</label>
+            <select id="exec-strat"></select>
+        </div>
+        <div class="form-group">
+            <label>Allocation (0.1 = 10%)</label>
+            <input type="number" id="exec-alloc" step="0.05">
+        </div>
+        <div class="form-group">
+            <label>Max Capital (EUR)</label>
+            <input type="number" id="exec-max-cap">
+        </div>
+        <div class="form-group">
+            <label>Max Daily Spend (EUR)</label>
+            <input type="number" id="exec-daily-spend">
+        </div>
+        <div class="form-group">
+            <label>Long Only</label>
+            <input type="checkbox" id="exec-long-only">
+        </div>
+        <div class="form-group">
+            <label style="color:red">REAL EXECUTION</label>
+            <input type="checkbox" id="exec-execute">
+        </div>
+        <div style="margin-top: 10px;">
+            <button onclick="saveConfig()">Save Config</button>
+            <button onclick="hideConfigForm()" style="background-color: #555;">Cancel</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Execution Report Section -->
+        <h3 id="report-header">Execution Report</h3>
+        <div id="exec-report-area" style="margin-bottom: 20px;">
+            <p>No report loaded.</p>
+        </div>
+        <button onclick="loadExecutionReport()">Refresh Report</button>
+
+        <hr style="border-color: #444; margin: 20px 0;">
+
+        <!-- Raw Logs Section (Collapsed) -->
+        <h3 id="log-header" style="display: inline-block; margin-right: 10px;">Raw Logs</h3>
+        <button onclick="toggleLogs()" id="btn-toggle-logs" style="font-size: 0.8rem; padding: 2px 8px;">Show
+            Logs</button>
+
+        <div id="log-container" style="display: none; margin-top: 10px;">
+            <div style="margin-bottom: 5px;">
+                <button onclick="pollLogs()">Refresh Logs (Manual)</button>
+            </div>
+            <div id="exec-log-viewer" class="log-box large"
+                style="height: 300px; font-family: monospace; white-space: pre-wrap;"></div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

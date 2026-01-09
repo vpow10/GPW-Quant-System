@@ -20,17 +20,30 @@ repos:
         entry: ruff
         language: system
         types: [python]
+        files: \.py$
         args: ["check", "."]
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2
+    hooks:
       - id: mypy
-        name: mypy
-        entry: mypy
-        language: system
-        types: [python]
+        additional_dependencies:
+          - pandas-stubs>=2.2
+          - typing-extensions>=4.8
+          - httpx>=0.27
+          - python-dotenv>=1.0
+          - textual>=0.82     # provides textual.app/containers/widgets
+          - matplotlib>=3.7
+          - Flask>=3.0.0
+          - types-Flask>=1.1.6
+          - pytest>=7.3.1
+        args:
+          - --python-version=3.12
+          - --config-file=pyproject.toml
         files: \.py$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
       - id: check-added-large-files

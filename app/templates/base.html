@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPW Quant System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>GPW Quant System Dashboard</h1>
+                <div id="auth-status-container" style="display: flex; gap: 10px; align-items: center;">
+                    <span id="auth-status-label">Checking auth...</span>
+                    <button id="btn-login" onclick="startLogin()" class="primary">Login to Saxo</button>
+                    <button id="btn-logout" onclick="logout()" style="display:none;">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer>
+            <p>&copy; GPW Quant System</p>
+        </footer>
+    </div>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+
+</html>

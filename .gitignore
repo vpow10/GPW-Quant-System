@@ -5,15 +5,35 @@ __pycache__/
 
 # Virtual environment
 venv/
-env/
+env
 .venv/
-.env/
-
+.env
+/.secrets/
+data/scripts/.secrets/
 # Pytest
 .pytest_cache/
 
 # MyPy
 .mypy_cache/
 
+# Ruff
+.ruff_cache/
+
 # IDEs
 .vscode/
+
+# orders
+journals/
+
+# data
+data/raw/
+data/processed/
+data/signals/
+
+# backtests
+data/backtests/*.txt
+data/backtests/stress/
+data/backtests/strategies/
+data/backtests/all_hybrids
+data/backtests/*.csv
+data/backtests/variants/

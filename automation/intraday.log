@@ -1,0 +1,318 @@
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : $500,000.00
+Max Daily Spend: $50,000.00
+FX Rate        : 4.0
+[wallet] total_cash=685473.78 total_value=1013502.48
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+KGHM (uic=25285) action=SELL signal 1 -> -1 close=269.0 hybrid_pred=None
+PKN Orlen (uic=25275) action=BUY signal -1 -> 1 close=94.6 hybrid_pred=None
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Intraday) ---
+Calc Exposure  : 1,380,328.20 PLN (~$345,082.05)
+Max Exposure Cap: $500,000.00
+Exposure Remain : $154,917.95
+
+--- Planned Orders (1) ---
+Sell 2635 x KGHM       @ 269.00 | Exit SELL (Closing Held Position: 2635.0)
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[auth] Access token refreshed.
+[wallet] ccy=EUR total_cash=685501.13 total_value=1013998.71
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+PKN Orlen (uic=25275) action=SELL signal 1 -> -1 close=94.58 hybrid_pred=-0.0008940687985159457
+PKO BP (uic=25279) action=BUY signal -1 -> 1 close=85.34 hybrid_pred=0.0004813318373635411
+
+Total Active Signals (Changes): 2
+
+--- Limit Check (Intraday) ---
+Calc Exposure  : 0.00 PLN (~€0.00)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €500,000.00
+
+--- Planned Orders (1) ---
+Sell 1    x PKN Orlen  @ 94.58 | Exit SELL (No Pos Data -> Default 1)
+
+[DRY-RUN] No orders placed. Use --execute to trade.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[auth] Access token refreshed.
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040792.81
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040772.72
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040669.10
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : hybrid_lstm_10d
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.3 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040669.10
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : lstm
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546805.85 total_value=1040669.10
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+Asseco (uic=32368) action=BUY signal 0 -> 1 close=235.0 hybrid_pred=None
+JSW (uic=53764) action=BUY signal 0 -> 1 close=23.95 hybrid_pred=None
+Bogdanka (uic=45371) action=BUY signal 0 -> 1 close=19.12 hybrid_pred=None
+
+Total Active Signals (Changes): 3
+
+--- Limit Check (Intraday) ---
+Calc Exposure  : 0.00 PLN (~€0.00)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €500,000.00
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---
+Strategy       : lstm
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041543.72
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+Asseco (uic=32368) action=BUY signal 0 -> 1 close=234.4 hybrid_pred=None
+GTC (uic=25277) action=BUY signal 0 -> 1 close=3.11 hybrid_pred=None
+JSW (uic=53764) action=BUY signal 0 -> 1 close=25.25 hybrid_pred=None
+Bogdanka (uic=45371) action=BUY signal 0 -> 1 close=19.6 hybrid_pred=None
+
+Total Active Signals (Changes): 4
+
+--- Limit Check (Intraday) ---
+Calc Exposure  : 0.00 PLN (~€0.00)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €500,000.00
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---
+
+[Report] Saved execution report to automation/intraday_report.json
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041545.80
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041542.68
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041542.68
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041545.80
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041535.38
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.0 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041539.55
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041545.80
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127 (EUR/PLN)
+[auth] Access token refreshed.
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041481.17
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041483.26
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041481.17
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Strategy       : momentum
+Bar Horizon    : 60 min
+Lookback Bars  : 200
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127 (EUR/PLN)
+[wallet] ccy=EUR total_cash=546569.17 total_value=1041449.90
+Found 14 instruments to analyze intraday.
+
+--- Candidates (signal changes) ---
+
+Total Active Signals (Changes): 0
+No signal changes this run. No trades.
+
+--- Limit Check (Intraday) ---
+Calc Exposure  : 2,084,784.05 PLN (~€494,880.73)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €5,119.27
+
+--- Planned Orders (0) ---
+
+--- Executing Orders ---
+
+[Report] Saved execution report to automation/intraday_report.json

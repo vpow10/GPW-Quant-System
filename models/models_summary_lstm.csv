@@ -1,0 +1,15 @@
+symbol,n_obs,test_loss,final_equity_log,model_path,backtest_path
+acp,2711,0.0009338524541817605,-2.2661881232198264,./models/acp_lstm_model.pth,./models/acp_backtest_lstm.csv
+bhw,2711,0.0002818495559040457,0.13156075474459575,./models/bhw_lstm_model.pth,./models/bhw_backtest_lstm.csv
+brs,2711,0.0024368716403841972,-1.96538510689955,./models/brs_lstm_model.pth,./models/brs_backtest_lstm.csv
+gtc,2684,0.0012678387574851513,-1.792165910999477,./models/gtc_lstm_model.pth,./models/gtc_backtest_lstm.csv
+jsw,2711,0.0022090089041739702,-0.8552725300954341,./models/jsw_lstm_model.pth,./models/jsw_backtest_lstm.csv
+ker,2711,0.0035415927413851023,-1.8431382159114977,./models/ker_lstm_model.pth,./models/ker_backtest_lstm.csv
+kgh,2711,0.0005300691118463874,-1.6066639914894816,./models/kgh_lstm_model.pth,./models/kgh_backtest_lstm.csv
+lwb,2711,0.0010515134781599045,-2.1778308565601034,./models/lwb_lstm_model.pth,./models/lwb_backtest_lstm.csv
+peo,2711,0.0012420507846400142,-2.1212256622233294,./models/peo_lstm_model.pth,./models/peo_backtest_lstm.csv
+pge,2711,0.0014724660431966186,-2.0659671472621013,./models/pge_lstm_model.pth,./models/pge_backtest_lstm.csv
+pkn,2711,0.0006355054210871458,-1.755379858095908,./models/pkn_lstm_model.pth,./models/pkn_backtest_lstm.csv
+pko,2711,0.0009450721554458141,-2.305487344708406,./models/pko_lstm_model.pth,./models/pko_backtest_lstm.csv
+pzu,2711,0.000520572008099407,-1.2228691016998012,./models/pzu_lstm_model.pth,./models/pzu_backtest_lstm.csv
+tpe,2711,0.0017376658506691456,-2.4333312387692474,./models/tpe_lstm_model.pth,./models/tpe_backtest_lstm.csv
