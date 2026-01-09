@@ -8,6 +8,8 @@ Features:
 """
 import argparse
 import asyncio
+import json
+from datetime import datetime
 
 import httpx
 from dotenv import load_dotenv
@@ -24,12 +26,10 @@ def get_live_eur_rate() -> float | None:
     """
     url = "http://api.nbp.pl/api/exchangerates/rates/a/eur/?format=json"
     try:
-        # Timeout 5s is usually enough for NBP
         with httpx.Client(timeout=5.0) as client:
             resp = client.get(url)
             resp.raise_for_status()
             data = resp.json()
-            # data structure: {"rates": [{"mid": 4.3, ...}]}
             mid = data["rates"][0]["mid"]
             return float(mid)
     except Exception as e:
@@ -108,14 +108,11 @@ async def main():
 
     trader = LiveTrader()
 
-    # 1. Fetch Wallet & Positions
-    # We need both to determine Total Equity and specific holdings for exits.
     total_cash = 0.0
     total_value = 0.0  # Net Equity to compare against Max Capital
     positions = []
 
     if args.auto_allocate or args.execute:
-        # Fetch Wallet
         w_res = trader.get_wallet()
         if "Data" in w_res and isinstance(w_res["Data"], list) and len(w_res["Data"]) > 0:
             data = w_res["Data"][0]
@@ -123,14 +120,12 @@ async def main():
             total_value = float(data.get("TotalValue", 0.0))  # NetEquity
         elif "CashAvailableForTrading" in w_res:
             total_cash = float(w_res["CashAvailableForTrading"])
-            # Fallback if structure is flat sim
             total_value = float(w_res.get("TotalValue", total_cash))
         elif "MarginAvailableForTrading" in w_res:
             total_cash = float(w_res["MarginAvailableForTrading"])
             total_value = float(w_res.get("TotalValue", total_cash))
         elif "CashBalance" in w_res:
             total_cash = float(w_res["CashBalance"])
-            # Very old or basic struct
             total_value = total_cash
         else:
             print(f"[!] Could not fetch wallet balance: {w_res}")
@@ -144,16 +139,13 @@ async def main():
             positions = []
 
         if total_value == 0.0 and total_cash > 0:
-            # We defer strict pos value calculation to after the price loop
             pass
     else:
-        # If not allocating/executing, simpler default
         pass
 
     symbols = trader.list_symbols()
     print(f"Found {len(symbols)} instruments to analyze.")
 
-    # Track Exposure manually to fix 0-price API issue
     calculated_exposure_pln = 0.0
     held_qty_map = {p["uic"]: p["qty"] for p in positions}
     processed_uics = set()
@@ -165,14 +157,12 @@ async def main():
         try:
             res = trader.generate_signal(args.strategy, uic)
 
-            # --- Exposure Tracking Fix ---
             if uic in held_qty_map:
                 qty = held_qty_map[uic]
                 price = res.get("close", 0.0)
                 val_pln = qty * price
                 calculated_exposure_pln += val_pln
                 processed_uics.add(uic)
-            # -----------------------------
 
         except Exception as e:
             print(f"[!] Error analyzing {name} ({uic}): {e}")
@@ -181,18 +171,14 @@ async def main():
         if "error" in res:
             continue
 
-        # Logic for Signal Change
         curr = res.get("signal", 0)
         prev = res.get("prev_signal", 0)
 
-        # If no change, we skip. Strategy is "Trade on Change".
         if curr == prev:
             continue
 
         if args.long_only:
-            # Long Only Logic
             if curr == -1:
-                # If we were Long (1), we should Sell to 0.
                 if prev == 1:
                     action = "SELL"
                 else:
@@ -205,7 +191,6 @@ async def main():
                 else:
                     continue
         else:
-            # Long/Short Logic
             if curr == 1:
                 action = "BUY"
             elif curr == -1:
@@ -228,20 +213,11 @@ async def main():
     if not candidates:
         print("No signal changes today. No trades.")
         return
-    # Limit Check & Alloc Init (Deferred)
 
-    # Add any held positions that were NOT in the symbols list (fallback to API value)
     for p in positions:
         if p["uic"] not in processed_uics:
-            # Use raw API value (might be 0, but best effort)
-            # Note: API value is often in PLN for GPW stocks if account is EUR?
-            # Actually API MarketValueOpenInBaseCurrency is EUR.
-            # But here we sum PLN exposure for conversion.
-            # If we don't know, ignore or use market_value from p
-            # (which we tried to parse from View, might be 0)
             pass
 
-    # Convert Exposure to EUR
     current_exposure_eur = calculated_exposure_pln / fx_rate
 
     global_remaining = args.max_capital - current_exposure_eur
@@ -282,21 +258,13 @@ async def main():
         total_score = sum(get_rank_score(c) for c in valid_entries)
 
         if total_score > 0:
-            # Base Alloc Calculation
-            # Allocation % applies to Total Cash available... or Limit?
-            # Usually Alloc % is "Use 10% of my cash".
-            # So base = total_cash * alloc_pct
-            # But capped by global_remaining and daily_spend.
-
             base_alloc_amt = total_cash * args.allocation_pct
 
-            # Cap 1: Global Limit Remaining
             capped_1 = min(base_alloc_amt, global_remaining)
 
-            # Cap 2: Daily Spend Limit
             capped_2 = min(capped_1, args.max_daily_spend)
 
-            final_daily_alloc = capped_2 * 0.95  # Safety buffer
+            final_daily_alloc = capped_2 * 0.95
 
             print(
                 f"\nAllocating €{final_daily_alloc:,.2f} (Base: €{base_alloc_amt:,.2f}, GlobalRem: €{global_remaining:,.2f}, DailyCap: €{args.max_daily_spend:,.2f})"
@@ -307,7 +275,6 @@ async def main():
                 weight = score / total_score
                 allocated_eur = final_daily_alloc * weight
 
-                # Convert EUR -> PLN
                 allocated_pln = allocated_eur * fx_rate
 
                 price = pick["close"]
@@ -327,7 +294,6 @@ async def main():
                         }
                     )
     elif entries:
-        # Fallback if no cash or auto-alloc off
         if usable_cash_for_entries <= 0 and args.auto_allocate:
             print("Skipping Entries: No Budget Available (Portfolio Limit or No Cash).")
         else:
@@ -345,7 +311,6 @@ async def main():
                     }
                 )
 
-    # --- Process Exits (Smart Sizing) ---
     for pick in exits:
         side = "Sell" if pick["action"] == "SELL" else "Buy"
         uic = pick["uic"]
@@ -354,8 +319,7 @@ async def main():
         held_qty = held_map.get(uic, 0)
 
         if held_qty > 0:
-            qty_to_close = int(held_qty)  # Close full position logic for now?
-            # Usually strict reversal means closing everything.
+            qty_to_close = int(held_qty)
             final_orders.append(
                 {
                     "uic": uic,
@@ -367,12 +331,7 @@ async def main():
                 }
             )
         else:
-            # If we don't hold it, there's nothing to close.
-            # Unless we are Shorting (COVER) and we didn't track it properly?
-            # Safe bet: if 0 held, ignore or log.
-            # But for testing, if we don't have positions data (e.g. error), we might fallback
             if not positions and not args.execute:
-                # Dry run without fetching positions? Fallback
                 final_orders.append(
                     {
                         "uic": uic,
@@ -407,6 +366,40 @@ async def main():
             time.sleep(1.5)  #
     else:
         print("\n[DRY-RUN] No orders placed. Use --execute to trade.")
+
+    report = {
+        "timestamp": datetime.now().isoformat(),
+        "strategy": args.strategy,
+        "mode": "daily",
+        "params": {
+            "allocation_pct": args.allocation_pct,
+            "max_capital": args.max_capital,
+            "max_daily_spend": args.max_daily_spend,
+            "long_only": args.long_only,
+            "execute": args.execute,
+        },
+        "fx_rate": fx_rate,
+        "wallet": {
+            "total_value": total_value,
+            "cash": total_cash,
+            "currency": "EUR",
+        },
+        "exposure": {
+            "calculated_pln": calculated_exposure_pln,
+            "calculated_eur": current_exposure_eur,
+            "remaining_eur": global_remaining,
+        },
+        "signals_found": len(candidates),
+        "orders": final_orders,
+    }
+
+    report_path = "automation/daily_report.json"
+    try:
+        with open(report_path, "w") as f:
+            json.dump(report, f, indent=2)
+        print(f"\n[Report] Saved execution report to {report_path}")
+    except Exception as e:
+        print(f"\n[!] Failed to save report: {e}")
 
 
 if __name__ == "__main__":

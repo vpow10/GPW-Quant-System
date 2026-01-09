@@ -500,3 +500,109 @@ Skipping Entries: No Budget Available (Portfolio Limit or No Cash).
 --- Planned Orders (0) ---
 
 --- Executing Orders ---
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,858.06 PLN (~€493,711.41)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €6,288.59
+
+Allocating €5,974.16 (Base: €54,656.92, GlobalRem: €6,288.59, DailyCap: €50,000.00)
+
+--- Planned Orders (5) ---
+Buy  15   x Asseco     @ 235.00 | Entry BUY (w=14.0%) [€838 -> 3529 PLN]
+Buy  269  x JSW        @ 23.95 | Entry BUY (w=25.6%) [€1531 -> 6450 PLN]
+Buy  19   x KGHM       @ 296.50 | Entry BUY (w=23.5%) [€1402 -> 5906 PLN]
+Buy  305  x Bogdanka   @ 19.12 | Entry BUY (w=23.2%) [€1388 -> 5848 PLN]
+Buy  34   x PKN Orlen  @ 99.75 | Entry BUY (w=13.6%) [€815 -> 3434 PLN]
+
+--- Executing Orders ---
+Executing Buy 15 x Asseco...
+  Result: {'OrderId': '5036798734'}
+Executing Buy 269 x JSW...
+  Result: {'OrderId': '5036798735'}
+Executing Buy 19 x KGHM...
+  Result: {'OrderId': '5036798736'}
+Executing Buy 305 x Bogdanka...
+  Result: {'OrderId': '5036798737'}
+Executing Buy 34 x PKN Orlen...
+  Result: {'OrderId': '5036798738'}
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,858.06 PLN (~€493,711.41)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €6,288.59
+
+Allocating €5,974.16 (Base: €54,656.92, GlobalRem: €6,288.59, DailyCap: €50,000.00)
+
+--- Planned Orders (5) ---
+Buy  15   x Asseco     @ 235.00 | Entry BUY (w=14.0%) [€838 -> 3529 PLN]
+Buy  269  x JSW        @ 23.95 | Entry BUY (w=25.6%) [€1531 -> 6450 PLN]
+Buy  19   x KGHM       @ 296.50 | Entry BUY (w=23.5%) [€1402 -> 5906 PLN]
+Buy  305  x Bogdanka   @ 19.12 | Entry BUY (w=23.2%) [€1388 -> 5848 PLN]
+Buy  34   x PKN Orlen  @ 99.75 | Entry BUY (w=13.6%) [€815 -> 3434 PLN]
+
+--- Executing Orders ---
+Executing Buy 15 x Asseco...
+  Result: {'OrderId': '5036798762'}
+Executing Buy 269 x JSW...
+  Result: {'OrderId': '5036798763'}
+Executing Buy 19 x KGHM...
+  Result: {'OrderId': '5036798765'}
+Executing Buy 305 x Bogdanka...
+  Result: {'OrderId': '5036798766'}
+Executing Buy 34 x PKN Orlen...
+  Result: {'OrderId': '5036798767'}
+
+[Report] Saved execution report to automation/daily_report.json
+Fetching live EUR rate from NBP...
+Live EUR Rate: 4.2127 PLN
+Max Capital    : €500,000.00
+Max Daily Spend: €50,000.00
+FX Rate        : 4.2127
+Found 14 instruments to analyze.
+
+Total Active Signals (Changes): 5
+
+--- Limit Check (Recalculated) ---
+Calc Exposure  : 2,079,858.06 PLN (~€493,711.41)
+Max Exposure Cap: €500,000.00
+Exposure Remain : €6,288.59
+
+Allocating €5,974.16 (Base: €54,656.92, GlobalRem: €6,288.59, DailyCap: €50,000.00)
+
+--- Planned Orders (5) ---
+Buy  15   x Asseco     @ 235.00 | Entry BUY (w=14.0%) [€838 -> 3529 PLN]
+Buy  269  x JSW        @ 23.95 | Entry BUY (w=25.6%) [€1531 -> 6450 PLN]
+Buy  19   x KGHM       @ 296.50 | Entry BUY (w=23.5%) [€1402 -> 5906 PLN]
+Buy  305  x Bogdanka   @ 19.12 | Entry BUY (w=23.2%) [€1388 -> 5848 PLN]
+Buy  34   x PKN Orlen  @ 99.75 | Entry BUY (w=13.6%) [€815 -> 3434 PLN]
+
+--- Executing Orders ---
+Executing Buy 15 x Asseco...
+  Result: {'OrderId': '5036799334'}
+Executing Buy 269 x JSW...
+  Result: {'OrderId': '5036799335'}
+Executing Buy 19 x KGHM...
+  Result: {'OrderId': '5036799336'}
+Executing Buy 305 x Bogdanka...
+  Result: {'OrderId': '5036799337'}
+Executing Buy 34 x PKN Orlen...
+  Result: {'OrderId': '5036799338'}
+
+[Report] Saved execution report to automation/daily_report.json

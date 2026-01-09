@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from typing import Any
+import json
+from datetime import datetime
+from typing import Any, cast
 
+import httpx
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -54,6 +57,26 @@ def build_intraday_df(uic: int, horizon_min: int, count: int) -> pd.DataFrame:
     df["ret_1d"] = df["close"].pct_change()
     df["flag_abnormal_gap"] = 0
     return df
+
+
+def get_live_eur_rate() -> float | None:
+    """
+    Fetches the current average EUR exchange rate from NBP API.
+    Returns float rate (e.g. 4.3). Returns None on failure.
+    """
+    url = "http://api.nbp.pl/api/exchangerates/rates/a/eur/?format=json"
+    try:
+        # Timeout 5s is usually enough for NBP
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+            # data structure: {"rates": [{"mid": 4.3, ...}]}
+            mid = data["rates"][0]["mid"]
+            return float(mid)
+    except Exception as e:
+        print(f"[!] Failed to fetch live EUR rate: {e}")
+        return None
 
 
 async def main() -> None:
@@ -129,6 +152,15 @@ async def main() -> None:
     )
     args = parser.parse_args()
 
+    # Fetch Live Rate
+    print("Fetching live EUR rate from NBP...")
+    live_rate = get_live_eur_rate()
+    if live_rate:
+        args.fx_rate = live_rate
+        print(f"Live EUR Rate: {args.fx_rate:.4f} PLN")
+    else:
+        print(f"[!] Using Fallback FX Rate: {args.fx_rate:.4f} PLN")
+
     print(f"Strategy       : {args.strategy}")
     print(f"Bar Horizon    : {args.horizon_min} min")
     print(f"Lookback Bars  : {args.lookback_bars}")
@@ -162,6 +194,12 @@ async def main() -> None:
             f"[wallet] ccy={w_res.get('Currency')} "
             f"total_cash={total_cash:.2f} total_value={total_value:.2f}"
         )
+
+        try:
+            positions = trader.get_positions()
+        except Exception as e:
+            print(f"[!] Error fetching positions: {e}")
+            positions = []
     else:
         pass
 
@@ -184,7 +222,8 @@ async def main() -> None:
                 continue
 
             last_row = df_sig.iloc[-1]
-            res = last_row.to_dict()
+            # Ensure dict[str, Any] for mypy
+            res = cast("dict[str, Any]", last_row.to_dict())
             res["date"] = str(res["date"])
             res["signal"] = int(res.get("signal", 0))
             res["prev_signal"] = int(res.get("prev_signal", 0))
@@ -250,10 +289,16 @@ async def main() -> None:
     print(f"\nTotal Active Signals (Changes): {len(candidates)}")
     if not candidates:
         print("No signal changes this run. No trades.")
-        return
+        # Do not return early, proceed to report generation
 
-    current_exposure_eur = calculated_exposure_pln / args.fx_rate
+    # User simplified logic: Exposure = TotalValue - TotalCash (in account currency, presumably EUR)
+    # This avoids relying on manual position tracking
+    current_exposure_eur = max(0.0, total_value - total_cash)
     global_remaining = args.max_capital - current_exposure_eur
+
+    # Back-calculate PLN for consistent logging
+    # Back-calculate PLN for consistent logging
+    calculated_exposure_pln = current_exposure_eur * args.fx_rate
 
     print("\n--- Limit Check (Intraday) ---")
     print(f"Calc Exposure  : {calculated_exposure_pln:,.2f} PLN (~€{current_exposure_eur:,.2f})")
@@ -399,6 +444,38 @@ async def main() -> None:
             time.sleep(1.5)
     else:
         print("\n[DRY-RUN] No orders placed. Use --execute to trade.")
+
+    # 5. Generate JSON Report
+    report = {
+        "timestamp": datetime.now().isoformat(),
+        "strategy": args.strategy,
+        "mode": "intraday",
+        "params": {
+            "allocation_pct": args.allocation_pct,
+            "max_capital": args.max_capital,
+            "max_daily_spend": args.max_daily_spend,
+            "long_only": args.long_only,
+            "execute": args.execute,
+            "horizon_min": args.horizon_min,
+        },
+        "fx_rate": args.fx_rate,
+        "wallet": {"total_value": total_value, "cash": total_cash, "currency": "EUR"},
+        "exposure": {
+            "calculated_pln": calculated_exposure_pln,
+            "calculated_eur": current_exposure_eur,
+            "remaining_eur": global_remaining,
+        },
+        "signals_found": len(candidates),
+        "orders": final_orders,
+    }
+
+    report_path = "automation/intraday_report.json"
+    try:
+        with open(report_path, "w") as f:
+            json.dump(report, f, indent=2)
+        print(f"\n[Report] Saved execution report to {report_path}")
+    except Exception as e:
+        print(f"\n[!] Failed to save report: {e}")
 
 
 if __name__ == "__main__":

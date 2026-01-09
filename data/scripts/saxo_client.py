@@ -5,7 +5,7 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import httpx
 from dotenv import load_dotenv
@@ -151,6 +151,5 @@ class SaxoClient:
         with httpx.Client(timeout=self.timeout) as c:
             r = c.get(url, headers=self._headers())
             if r.status_code == 200:
-                return r.json()
-            # Jeśli błąd, zwracamy strukturę błędu
+                return cast("dict[str, Any]", r.json())
             return {"error": f"HTTP {r.status_code}", "raw": r.text}

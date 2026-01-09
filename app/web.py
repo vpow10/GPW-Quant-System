@@ -147,7 +147,7 @@ def trade():
         res = trader.execute_trade(
             int(uic),
             side,
-            int(amount) if str(amount).isdigit() else float(amount),
+            int(float(amount)),  # Force int for execute_trade
             order_type,
             float(price) if price else None,
         )
@@ -294,6 +294,26 @@ def exec_script(mode):
     try:
         subprocess.Popen(["bash", script])
         return jsonify({"success": True, "message": f"{mode.capitalize()} trader started"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/execution/report/<mode>")
+def get_exec_report(mode):
+    if mode not in ("daily", "intraday"):
+        return jsonify({"error": "Invalid mode"}), 400
+
+    import json
+    import os
+
+    path = f"automation/{mode}_report.json"
+    try:
+        if not os.path.exists(path):
+            return jsonify({"error": "Report not found", "timestamp": None})
+
+        with open(path, "r") as f:
+            data = json.load(f)
+            return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

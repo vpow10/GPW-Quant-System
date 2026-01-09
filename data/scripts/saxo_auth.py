@@ -168,7 +168,7 @@ class SaxoPKCE:
                     f"  ctype    : {r.headers.get('content-type', '')}\n"
                     f"  response : {body!r}\n"
                 )
-            return r.json()  # type: ignore[return-value]
+            return cast("dict[str, Any]", r.json())  # type: ignore[return-value]
 
     def refresh(self, refresh_token: str, code_verifier: str) -> dict[str, Any]:
         """Refresh tokens using the refresh token."""
@@ -203,7 +203,7 @@ class SaxoPKCE:
                 except Exception:
                     body = r.text
                 raise SystemExit(f"Token refresh failed ({r.status_code}). Details: {body!r}")
-            return r.json()  # type: ignore[return-value]
+            return cast("dict[str, Any]", r.json())  # type: ignore[return-value]
 
 
 class _CallbackHandler(http.server.BaseHTTPRequestHandler):

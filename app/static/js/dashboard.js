@@ -75,7 +75,7 @@ async function loadStrategiesAndSymbols() {
                 opt1.textContent = s;
                 stratSel.appendChild(opt1);
             }
-            else {
+            if (execSel) {
                 const opt2 = document.createElement('option');
                 opt2.value = s;
                 opt2.textContent = s;
@@ -393,12 +393,100 @@ function switchExecMode(mode) {
 
     // Reload data
     loadConfig();
+    document.getElementById('exec-report-area').innerHTML = '<p>Loading report...</p>';
+    loadExecutionReport();
+
+    // Clear logs
     const logViewer = document.getElementById('exec-log-viewer');
     if (logViewer) {
-        logViewer.textContent = 'Switching logs...';
-        logViewer.scrollTop = 0;
+        logViewer.textContent = '';
     }
-    pollLogs();
+}
+
+function showConfigForm() {
+    document.getElementById('exec-config-form').style.display = 'block';
+}
+
+function hideConfigForm() {
+    document.getElementById('exec-config-form').style.display = 'none';
+}
+
+function toggleLogs() {
+    const cont = document.getElementById('log-container');
+    const btn = document.getElementById('btn-toggle-logs');
+    if (cont.style.display === 'none') {
+        cont.style.display = 'block';
+        btn.textContent = 'Hide Logs';
+        pollLogs(); // Fetch once when opening
+    } else {
+        cont.style.display = 'none';
+        btn.textContent = 'Show Logs';
+    }
+}
+
+async function loadExecutionReport() {
+    const area = document.getElementById('exec-report-area');
+    try {
+        const res = await fetch(`/api/execution/report/${currentExecMode}`);
+        const data = await res.json();
+
+        if (data.error) {
+            area.innerHTML = `<p>No report found or error: ${data.error}</p>`;
+            return;
+        }
+
+        // Build Table
+        let html = `
+            <div style="background: #252526; padding: 10px; border-radius: 5px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #444; padding-bottom:5px;">
+                    <span><strong>Date:</strong> ${new Date(data.timestamp).toLocaleString()}</span>
+                    <span><strong>Strategy:</strong> ${data.strategy}</span>
+                    <span><strong>Signals:</strong> ${data.signals_found}</span>
+                </div>
+                <div style="font-size: 0.9em; color: #ccc; margin-bottom: 10px;">
+                    <strong>Wallet:</strong> ${data.wallet.total_value.toFixed(2)} ${data.wallet.currency} | 
+                    <strong>Cash:</strong> ${data.wallet.cash.toFixed(2)} |
+                    <strong>Exposure:</strong> ${data.exposure.calculated_eur.toFixed(2)} EUR
+                </div>
+        `;
+
+        if (data.orders && data.orders.length > 0) {
+            html += `<table style="width:100%; border-collapse: collapse; font-size: 0.9em;">
+                <thead>
+                    <tr style="text-align:left; border-bottom: 1px solid #555;">
+                        <th style="padding: 5px;">Side</th>
+                        <th style="padding: 5px;">Qty</th>
+                        <th style="padding: 5px;">Symbol</th>
+                        <th style="padding: 5px;">Price</th>
+                        <th style="padding: 5px;">Reason/Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            data.orders.forEach(o => {
+                const color = o.side.toLowerCase() === 'buy' ? '#4ec9b0' : '#f44747';
+                html += `
+                    <tr style="border-bottom: 1px solid #333;">
+                        <td style="padding: 5px; color:${color}; font-weight:bold;">${o.side}</td>
+                        <td style="padding: 5px;">${o.amount}</td>
+                        <td style="padding: 5px;">${o.name} <span style="color:#777; font-size:0.8em">(${o.uic})</span></td>
+                        <td style="padding: 5px;">${o.price.toFixed(2)}</td>
+                        <td style="padding: 5px; color:#aaa;">${o.reason}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+        } else {
+            html += `<p style="color:#aaa; font-style:italic;">No orders executed.</p>`;
+        }
+
+        html += `</div>`;
+        area.innerHTML = html;
+
+    } catch (e) {
+        area.textContent = `Error loading report: ${e}`;
+    }
 }
 
 async function loadConfig() {
@@ -459,12 +547,19 @@ async function saveConfig() {
 async function runScript() {
     if (!confirm(`Run ${currentExecMode} Trader script now?`)) return;
 
+    // Show loading state in report area
+    document.getElementById('exec-report-area').innerHTML = "<p>Running script... please wait.</p>";
+
     try {
         const res = await fetch(`/api/exec/${currentExecMode}`, { method: 'POST' });
         const data = await res.json();
         if (data.success) {
             alert(data.message);
-            pollLogs();
+            // Wait a moment for script to finish writing report?
+            // Actually the script runs in background via subprocess.Popen in python...
+            // The python code returns immediately.
+            // We might need to poll for the report. Or just wait 2s and try load loop.
+            setTimeout(loadExecutionReport, 3000);
         } else {
             alert("Error: " + data.error);
         }
@@ -503,18 +598,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadStrategiesAndSymbols();
     loadAnalyzedStrategies();
     loadConfig();
+    loadExecutionReport();
     refreshBalance();
 
     // Poll auth every 60s
     setInterval(checkAuth, 60000);
-    // Poll logs every 5s if tab is active AND auto-refresh is checked
-    setInterval(() => {
-        const tab = document.getElementById('Execution');
-        const isTabVisible = tab && tab.style.display === 'block';
-        const autoCheck = document.getElementById('auto-refresh');
-        const isAuto = autoCheck && autoCheck.checked;
-        if (isTabVisible && isAuto) {
-            pollLogs();
-        }
-    }, 5000);
 });
+

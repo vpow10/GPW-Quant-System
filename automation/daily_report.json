@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-01-09T18:12:42.036026",
+  "strategy": "momentum",
+  "mode": "daily",
+  "params": {
+    "allocation_pct": 0.1,
+    "max_capital": 500000.0,
+    "max_daily_spend": 50000.0,
+    "long_only": true,
+    "execute": true
+  },
+  "fx_rate": 4.2127,
+  "wallet": {
+    "total_value": 1041545.8,
+    "cash": 546569.17,
+    "currency": "EUR"
+  },
+  "exposure": {
+    "calculated_pln": 2079858.06,
+    "calculated_eur": 493711.4107342085,
+    "remaining_eur": 6288.589265791525
+  },
+  "signals_found": 5,
+  "orders": [
+    {
+      "uic": 32368,
+      "name": "Asseco",
+      "side": "Buy",
+      "amount": 15,
+      "price": 235.0,
+      "reason": "Entry BUY (w=14.0%) [\u20ac838 -> 3529 PLN]"
+    },
+    {
+      "uic": 53764,
+      "name": "JSW",
+      "side": "Buy",
+      "amount": 269,
+      "price": 23.95,
+      "reason": "Entry BUY (w=25.6%) [\u20ac1531 -> 6450 PLN]"
+    },
+    {
+      "uic": 25285,
+      "name": "KGHM",
+      "side": "Buy",
+      "amount": 19,
+      "price": 296.5,
+      "reason": "Entry BUY (w=23.5%) [\u20ac1402 -> 5906 PLN]"
+    },
+    {
+      "uic": 45371,
+      "name": "Bogdanka",
+      "side": "Buy",
+      "amount": 305,
+      "price": 19.12,
+      "reason": "Entry BUY (w=23.2%) [\u20ac1388 -> 5848 PLN]"
+    },
+    {
+      "uic": 25275,
+      "name": "PKN Orlen",
+      "side": "Buy",
+      "amount": 34,
+      "price": 99.75,
+      "reason": "Entry BUY (w=13.6%) [\u20ac815 -> 3434 PLN]"
+    }
+  ]
+}

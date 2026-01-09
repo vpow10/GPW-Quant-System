@@ -124,7 +124,14 @@
         </select>
     </div>
 
-    <div class="config-box">
+    <div class="config-actions" style="margin-bottom: 20px;">
+        <button onclick="showConfigForm()">New Config</button>
+        <button id="btn-run-exec" onclick="runScript()" style="margin-left: 20px; background-color: #d9534f;">Run Daily
+            Trader</button>
+    </div>
+
+    <!-- Hidden Config Form -->
+    <div id="exec-config-form" class="config-box" style="display: none; margin-bottom: 20px;">
         <h3>Configuration (<span id="config-title">daily_config.env</span>)</h3>
         <div class="form-group">
             <label>Strategy</label>
@@ -152,19 +159,32 @@
         </div>
         <div style="margin-top: 10px;">
             <button onclick="saveConfig()">Save Config</button>
-            <button id="btn-run-exec" onclick="runScript()" style="margin-left: 20px; background-color: #d9534f;">Run
-                Daily Trader</button>
+            <button onclick="hideConfigForm()" style="background-color: #555;">Cancel</button>
         </div>
     </div>
+
     <div class="main-content">
-        <h3 id="log-header">Execution Logs (automation/daily.log)</h3>
-        <div style="margin-bottom: 5px;">
-            <button onclick="pollLogs()">Refresh Logs</button>
-            <input type="checkbox" id="auto-refresh" checked>
-            <label for="auto-refresh" style="font-weight: normal; font-size: 0.9em;">Auto Refresh (5s)</label>
+        <!-- Execution Report Section -->
+        <h3 id="report-header">Execution Report</h3>
+        <div id="exec-report-area" style="margin-bottom: 20px;">
+            <p>No report loaded.</p>
         </div>
-        <div id="exec-log-viewer" class="log-box large"
-            style="height: 500px; font-family: monospace; white-space: pre-wrap;"></div>
+        <button onclick="loadExecutionReport()">Refresh Report</button>
+
+        <hr style="border-color: #444; margin: 20px 0;">
+
+        <!-- Raw Logs Section (Collapsed) -->
+        <h3 id="log-header" style="display: inline-block; margin-right: 10px;">Raw Logs</h3>
+        <button onclick="toggleLogs()" id="btn-toggle-logs" style="font-size: 0.8rem; padding: 2px 8px;">Show
+            Logs</button>
+
+        <div id="log-container" style="display: none; margin-top: 10px;">
+            <div style="margin-bottom: 5px;">
+                <button onclick="pollLogs()">Refresh Logs (Manual)</button>
+            </div>
+            <div id="exec-log-viewer" class="log-box large"
+                style="height: 300px; font-family: monospace; white-space: pre-wrap;"></div>
+        </div>
     </div>
 </div>
 </div>
