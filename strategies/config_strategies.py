@@ -1,8 +1,9 @@
-from typing import Any
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any, Callable
 
 from strategies.base import StrategyBase
-from strategies.hybrid_lstm_strategy import HybridLSTMRegimeBlendStrategy
-from strategies.lstm_strategy import LSTMStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.momentum import MomentumStrategy
 from strategies.rsi import RSIStrategy
@@ -37,8 +38,8 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "short_only": False,
     },
     "momentum_tsmom_20d": {
-        "lookback": 20,  # ~1 trading month
-        "entry_long": 0.0,  # sign of return
+        "lookback": 20,
+        "entry_long": 0.0,
         "entry_short": 0.0,
         "col_close": "close",
         "long_only": False,
@@ -87,7 +88,7 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "long_only": True,
     },
     "momentum_tsmom_60d": {
-        "lookback": 60,  # ~3 months
+        "lookback": 60,
         "entry_long": 0.0,
         "entry_short": 0.0,
         "col_close": "close",
@@ -96,7 +97,7 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
     },
     # A tier
     "momentum_tsmom_120d": {
-        "lookback": 120,  # ~6 months
+        "lookback": 120,
         "entry_long": 0.0,
         "entry_short": 0.0,
         "col_close": "close",
@@ -108,12 +109,12 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "entry_long": 0.0,
         "entry_short": 0.0,
         "col_close": "close",
-        "long_only": True,  # only go long on positive momentum, flat otherwise
+        "long_only": True,
         "short_only": False,
     },
     "momentum_60d_loose": {
         "lookback": 60,
-        "entry_long": 0.03,  # +3% over 60 days (~0.5% per month)
+        "entry_long": 0.03,
         "entry_short": -0.03,
         "col_close": "close",
         "long_only": False,
@@ -122,7 +123,7 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
     # A tier
     "momentum_120d_loose": {
         "lookback": 120,
-        "entry_long": 0.05,  # +5% over 6 months (~1.6% per quarter)
+        "entry_long": 0.05,
         "entry_short": -0.05,
         "col_close": "close",
         "long_only": False,
@@ -130,7 +131,7 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
     },
     # S tier
     "momentum_252d_longonly": {
-        "lookback": 252,  # ~1 year
+        "lookback": 252,
         "entry_long": 0.0,
         "entry_short": 0.0,
         "col_close": "close",
@@ -141,19 +142,19 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "window": 20,
         "z_entry": 1.5,
         "col_close": "close",
-        "long_only": True,  # only buy deep dips
+        "long_only": True,
         "short_only": False,
     },
     "mean_reversion_50d_longonly": {
         "window": 50,
-        "z_entry": 2.0,  # rarer, bigger dips
+        "z_entry": 2.0,
         "col_close": "close",
         "long_only": True,
         "short_only": False,
     },
     "mean_reversion_5d_longonly": {
         "window": 5,
-        "z_entry": 1.0,  # price 1s below short-term mean
+        "z_entry": 1.0,
         "col_close": "close",
         "long_only": True,
         "short_only": False,
@@ -167,11 +168,10 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
     },
 }
 
+# Non-ML strategies registered eagerly (safe)
 STRATEGY_REGISTRY: dict[str, type[StrategyBase]] = {
     "momentum": MomentumStrategy,
     "mean_reversion": MeanReversionStrategy,
-    "hybrid_lstm_10d": HybridLSTMRegimeBlendStrategy,
-    "lstm": LSTMStrategy,
     "momentum_tsmom_20d": MomentumStrategy,
     "momentum_tsmom_60d": MomentumStrategy,
     "momentum_tsmom_120d": MomentumStrategy,
@@ -190,3 +190,35 @@ STRATEGY_REGISTRY: dict[str, type[StrategyBase]] = {
     "rsi_30d": RSIStrategy,
     "rsi_30d_longonly": RSIStrategy,
 }
+
+# ML strategies registered lazily (import torch only if requested)
+_LAZY_REGISTRY: dict[str, Callable[[], type[StrategyBase]]] = {
+    "lstm": lambda: _import_cls("strategies.lstm_strategy", "LSTMStrategy"),
+    "hybrid_lstm_10d": lambda: _import_cls(
+        "strategies.hybrid_lstm_strategy", "HybridLSTMRegimeBlendStrategy"
+    ),
+}
+
+
+def _import_cls(module_path: str, class_name: str) -> type[StrategyBase]:
+    mod = import_module(module_path)
+    cls = getattr(mod, class_name)
+    if not isinstance(cls, type) or not issubclass(cls, StrategyBase):
+        raise TypeError(f"{module_path}.{class_name} is not a StrategyBase subclass")
+    return cls
+
+
+def get_strategy_class(strategy_name: str) -> type[StrategyBase]:
+    """
+    Fetch strategy class by name.
+    Imports optional ML strategy modules only when needed.
+    """
+    if strategy_name in STRATEGY_REGISTRY:
+        return STRATEGY_REGISTRY[strategy_name]
+
+    if strategy_name in _LAZY_REGISTRY:
+        cls = _LAZY_REGISTRY[strategy_name]()
+        STRATEGY_REGISTRY[strategy_name] = cls
+        return cls
+
+    raise KeyError(f"Unknown strategy: {strategy_name}")

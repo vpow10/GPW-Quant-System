@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 from app.engine import LiveTrader
 from app.sync import NAME_MAP, UIC_MAP, fetch_intraday_ohlc
-from strategies.config_strategies import STRATEGY_CONFIG, STRATEGY_REGISTRY
+from strategies.config_strategies import STRATEGY_CONFIG, get_strategy_class
 
 load_dotenv()
 
@@ -170,10 +170,11 @@ async def main() -> None:
 
     trader = LiveTrader()
 
-    strat_cls = STRATEGY_REGISTRY.get(args.strategy)
     strat_cfg = STRATEGY_CONFIG.get(args.strategy, {})
-    if not strat_cls:
-        print(f"[!] Strategy {args.strategy} not found in registry.")
+    try:
+        strat_cls = get_strategy_class(args.strategy)
+    except KeyError:
+        print(f"[!] Strategy {args.strategy} not found.")
         return
 
     strategy = strat_cls(**strat_cfg) if strat_cfg else strat_cls()

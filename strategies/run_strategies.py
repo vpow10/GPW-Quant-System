@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from strategies.config_strategies import STRATEGY_CONFIG, STRATEGY_REGISTRY
+from strategies.config_strategies import STRATEGY_CONFIG, get_strategy_class
 
 
 def run_strategies(
@@ -18,13 +18,13 @@ def run_strategies(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for name in strategy_names:
-        if name not in STRATEGY_REGISTRY:
+        try:
+            strategy_cls = get_strategy_class(name)
+        except KeyError:
             continue
 
-        strategy_cls = STRATEGY_REGISTRY[name]
         params = STRATEGY_CONFIG.get(name, {})
-
-        strategy = strategy_cls(**params)
+        strategy = strategy_cls(**params) if params else strategy_cls()
 
         signals = strategy.generate_signals(df)
 
@@ -62,12 +62,14 @@ def main() -> None:
         default=Path("data/signals"),
         help="Directory where signals will be saved.",
     )
+
+    all_names = list(STRATEGY_CONFIG.keys())
     parser.add_argument(
         "--strategies",
         "-s",
         nargs="+",
-        choices=list(STRATEGY_REGISTRY.keys()),
-        default=list(STRATEGY_REGISTRY.keys()),
+        choices=all_names,
+        default=all_names,
         help="Which strategies to run (default: all).",
     )
 

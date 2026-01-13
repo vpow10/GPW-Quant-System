@@ -10,7 +10,7 @@ import httpx
 from app.sync import NAME_MAP, UIC_MAP
 from data.scripts.preprocess_gpw import process_symbol
 from data.scripts.saxo_client import SaxoClient
-from strategies.config_strategies import STRATEGY_CONFIG, STRATEGY_REGISTRY
+from strategies.config_strategies import STRATEGY_CONFIG, get_strategy_class
 
 
 class LiveTrader:
@@ -82,18 +82,14 @@ class LiveTrader:
             return {"error": f"No data for {symbol_stem}"}
 
         # 2. Load Strategy
-        strat_cls = STRATEGY_REGISTRY.get(strategy_name)
-        strat_cfg = STRATEGY_CONFIG.get(strategy_name)
+        strat_cfg = STRATEGY_CONFIG.get(strategy_name, {})
 
-        # Determine strict class lookup if not in registry directly (some config keys point to same class)
-        # In config_strategies.py, STRATEGY_REGISTRY keys match STRATEGY_CONFIG keys?
-        # Yes, mostly.
-        if not strat_cls:
-            # Fallback logic if registry keys don't perfectly match config names (e.g. variants)
-            # Looking at config_strategies.py, they DO match.
-            return {"error": f"Strategy {strategy_name} not found in registry."}
+        try:
+            strategy_cls = get_strategy_class(strategy_name)
+        except KeyError:
+            return {"error": f"Unknown strategy {strategy_name}"}
 
-        strategy = strat_cls(**strat_cfg) if strat_cfg else strat_cls()
+        strategy = strategy_cls(**strat_cfg) if strat_cfg else strategy_cls()
 
         # 3. Generate Signals
         # Strategies expect 'date', 'close', etc. preprocess_gpw gives exactly that.
