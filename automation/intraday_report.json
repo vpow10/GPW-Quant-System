@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-01-09T18:18:16.851515",
+  "strategy": "momentum",
+  "mode": "intraday",
+  "params": {
+    "allocation_pct": 0.1,
+    "max_capital": 500000.0,
+    "max_daily_spend": 50000.0,
+    "long_only": true,
+    "execute": true,
+    "horizon_min": 60
+  },
+  "fx_rate": 4.2127,
+  "wallet": {
+    "total_value": 1041449.9,
+    "cash": 546569.17,
+    "currency": "EUR"
+  },
+  "exposure": {
+    "calculated_pln": 2084784.051271,
+    "calculated_eur": 494880.73,
+    "remaining_eur": 5119.270000000019
+  },
+  "signals_found": 0,
+  "orders": []
+}

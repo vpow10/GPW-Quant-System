@@ -7,7 +7,7 @@ import csv
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from dotenv import load_dotenv
@@ -97,7 +97,7 @@ def fetch_ohlc(uic: int, limit: int = 100) -> list[dict[str, Any]]:
             return []
 
         data = r.json()
-        return data.get("Data", [])
+        return cast("list[dict[str, Any]]", data.get("Data", []))
 
 
 def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[dict[str, Any]]:
@@ -122,7 +122,7 @@ def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[d
             return []
 
         data = r.json()
-        return data.get("Data", [])
+        return cast("list[dict[str, Any]]", data.get("Data", []))
 
 
 def parse_saxo_time(ts: str) -> str:
