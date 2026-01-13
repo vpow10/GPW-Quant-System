@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from dotenv import load_dotenv
@@ -49,7 +49,7 @@ def api_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
             except Exception:
                 detail = r.text
             raise SystemExit(f"HTTP {r.status_code} for {url} -> {detail}") from e
-        return r.json()  # type: ignore[return-value]
+        return cast(dict[str, Any], r.json())
 
 
 def cmd_instruments(args: argparse.Namespace) -> None:

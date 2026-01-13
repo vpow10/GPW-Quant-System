@@ -1,26 +1,58 @@
 repos:
   - repo: local
     hooks:
-      - id: black
-        name: Black
+      # -------- Local auto-fix hooks (run on commit) --------
+      - id: black-fix
+        name: Black (fix)
         entry: black
         language: system
         types: [python]
         files: \.py$
+        stages: [pre-commit]
 
-      - id: isort
-        name: isort
+      - id: isort-fix
+        name: isort (fix)
         entry: isort
         language: system
         types: [python]
         files: \.py$
+        stages: [pre-commit]
 
-      - id: ruff
-        name: ruff
+      - id: ruff-fix
+        name: ruff (fix)
         entry: ruff
         language: system
         types: [python]
         files: \.py$
+        stages: [pre-commit]
+        args: ["check", ".", "--fix"]
+
+      # -------- CI check-only hooks (run in CI via hook-stage=manual) --------
+      - id: black-check
+        name: Black (check)
+        entry: black
+        language: system
+        types: [python]
+        files: \.py$
+        stages: [manual]
+        args: ["--check", "--diff"]
+
+      - id: isort-check
+        name: isort (check)
+        entry: isort
+        language: system
+        types: [python]
+        files: \.py$
+        stages: [manual]
+        args: ["--check-only", "--diff"]
+
+      - id: ruff-check
+        name: ruff (check)
+        entry: ruff
+        language: system
+        types: [python]
+        files: \.py$
+        stages: [manual]
         args: ["check", "."]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -32,18 +64,21 @@ repos:
           - typing-extensions>=4.8
           - httpx>=0.27
           - python-dotenv>=1.0
-          - textual>=0.82     # provides textual.app/containers/widgets
+          - textual>=0.82
           - matplotlib>=3.7
           - Flask>=3.0.0
           - types-Flask>=1.1.6
           - pytest>=7.3.1
         args:
-          - --python-version=3.12
+          - --python-version=3.11
           - --config-file=pyproject.toml
         files: \.py$
+        stages: [manual]   # run mypy in CI only (recommended)
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: check-yaml
+        stages: [manual]
       - id: check-added-large-files
+        stages: [manual]

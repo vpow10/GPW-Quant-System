@@ -31,17 +31,10 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; else pip install pre-commit pytest; fi
 
-      - name: Run pre-commit (format & lint hooks)
-        run: |
-          pre-commit run --all-files
+      - name: Run pre-commit (CI checks only)
+        run: pre-commit run --all-files --hook-stage manual --show-diff-on-failure
 
-      - name: Check formatting / lint quick checks
-        run: |
-          black --check .
-          isort --check-only .
-          ruff check .
-
-      - name: Run backtests
+      - name: Run tests
         env:
           PYTHONPATH: ./src
         run: |
