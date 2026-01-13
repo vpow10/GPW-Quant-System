@@ -22,6 +22,13 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "smoothing_window": 3,
         "exit_threshold": -0.002,
     },
+    "mean_reversion": {
+        "window": 20,
+        "z_entry": 1.5,
+        "col_close": "close",
+        "long_only": False,
+        "short_only": False,
+    },
     "hybrid_lstm_10d": {
         "long_only": False,
         "models_dir": "models/hybrid_lstm",
@@ -29,13 +36,6 @@ STRATEGY_CONFIG: dict[str, dict[str, Any]] = {
         "z_exit": 0.3,
         "vol_quantile": 0.7,
         "min_hold_days": 5,
-    },
-    "mean_reversion": {
-        "window": 20,
-        "z_entry": 1.5,
-        "col_close": "close",
-        "long_only": False,
-        "short_only": False,
     },
     "momentum_tsmom_20d": {
         "lookback": 20,
