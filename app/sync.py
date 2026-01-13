@@ -1,27 +1,41 @@
 """
-Module to sync GPW stock data from Saxo OpenApi to data/raw/*.csv.
+Module to sync GPW stock data from Stooq (incremental) and run the full pipeline.
+Replaces the old Saxo-based sync.
 """
 from __future__ import annotations
 
 import csv
+import sys
+import subprocess
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from pathlib import Path
+from io import BytesIO
 from typing import Any, cast
 
+import pandas as pd
 import httpx
 from dotenv import load_dotenv
 
 from data.scripts.saxo_auth import ensure_access_token
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.append(str(REPO_ROOT))
+
+from data.scripts import stooq_fetch
+from data.scripts import preprocess_gpw
+
 load_dotenv()
 
-DATA_DIR = Path("data/raw")
+DATA_RAW = REPO_ROOT / "data" / "raw"
+DATA_PROCESSED = REPO_ROOT / "data" / "processed"
+PYTHON_EXE = sys.executable
+
 OPENAPI_BASE = (
     os.getenv("SAXO_OPENAPI_BASE") or "https://gateway.saxobank.com/sim/openapi"
 ).rstrip("/")
 
-# Mapping: UIC -> Filename
 UIC_MAP = {
     32368: "acp.csv",
     45348: "bhw.csv",
@@ -56,50 +70,6 @@ NAME_MAP = {
     48752: "Tauron",
 }
 
-
-def get_last_date(filepath: Path) -> str | None:
-    if not filepath.exists():
-        return None
-    try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            header = next(reader, None)
-            if not header:
-                return None
-            last_date = None
-            for row in reader:
-                if row:
-                    last_date = row[0]
-            return last_date
-    except Exception:
-        return None
-
-
-def fetch_ohlc(uic: int, limit: int = 100) -> list[dict[str, Any]]:
-    """Fetch daily OHLCV data from Saxo."""
-    token = ensure_access_token()
-    url = f"{OPENAPI_BASE}/chart/v3/charts"
-
-    params: dict[str, str | int] = {
-        "Uic": uic,
-        "AssetType": "Stock",
-        "Horizon": 1440,
-        "Count": limit,
-        "FieldGroups": "Data",
-    }
-
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
-    with httpx.Client(timeout=30) as client:
-        r = client.get(url, params=params, headers=headers)
-        if r.status_code != 200:
-            print(f"Error fetching data for UIC {uic}: {r.status_code} {r.text}")
-            return []
-
-        data = r.json()
-        return cast("list[dict[str, Any]]", data.get("Data", []))
-
-
 def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[dict[str, Any]]:
     """Fetch intraday OHLC data from Saxo (e.g. 60-minute bars)."""
     token = ensure_access_token()
@@ -108,8 +78,8 @@ def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[d
     params: dict[str, str | int] = {
         "Uic": uic,
         "AssetType": "Stock",
-        "Horizon": horizon,  # minutes; 60 = hourly
-        "Count": limit,  # number of bars back
+        "Horizon": horizon, 
+        "Count": limit,
         "FieldGroups": "Data",
     }
 
@@ -124,61 +94,153 @@ def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[d
         data = r.json()
         return cast("list[dict[str, Any]]", data.get("Data", []))
 
+def get_last_date(filepath: Path) -> date | None:
+    """Read the last date from a Stooq-format CSV (Data, Otwarcie, ...)."""
+    if not filepath.exists():
+        return None
+    try:
+        df = pd.read_csv(filepath, usecols=["Data"])
+        if df.empty:
+            return None
+        last_str = df["Data"].iloc[-1]
+        return datetime.strptime(last_str, "%Y-%m-%d").date()
+    except Exception as e:
+        print(f"Warning: Could not read date from {filepath}: {e}")
+        return None
 
-def parse_saxo_time(ts: str) -> str:
-    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-    return dt.strftime("%Y-%m-%d")
-
-
-def append_data(filepath: Path, new_rows: list[dict[str, Any]]) -> int:
-    if not new_rows:
-        return 0
-    count = 0
-    with open(filepath, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        for row in new_rows:
-            date_str = parse_saxo_time(row["Time"])
-            line = [
-                date_str,
-                row["Open"],
-                row["High"],
-                row["Low"],
-                row["Close"],
-                int(row.get("Volume", 0)),
-            ]
-            writer.writerow(line)
-            count += 1
-    return count
-
-
-def sync_gpw_data() -> list[str]:
+def merge_and_save(filepath: Path, new_content: bytes) -> int:
     """
-    Syncs data for all configured GPW instruments.
-    Returns a list of log messages describing what happened.
+    Merge new CSV bytes with existing file. 
+    Returns number of new rows added (approx).
+    """
+    try:
+        new_df = pd.read_csv(BytesIO(new_content))
+    except Exception as e:
+        print(f"  [Error] Failed to parse fetched CSV: {e}")
+        return 0
+
+    if new_df.empty:
+        return 0
+
+    if filepath.exists():
+        try:
+            old_df = pd.read_csv(filepath)
+            combined = pd.concat([old_df, new_df])
+            combined = combined.drop_duplicates(subset=["Data"], keep="last")
+            combined = combined.sort_values("Data")
+        except Exception as e:
+            print(f"  [Error] Failed to merge with existing file: {e}. Overwriting.")
+            combined = new_df
+    else:
+        combined = new_df
+
+    combined.to_csv(filepath, index=False)
+    return len(new_df)
+
+def sync_stooq_smart() -> tuple[list[str], int]:
+    """
+    1. Read list of selected symbols.
+    2. Check local files for last date.
+    3. Fetch incremental data.
+    4. Merge.
+    Returns: (list of log messages, updated_count)
     """
     logs = []
-    logs.append(f"Starting sync for {len(UIC_MAP)} instruments...")
+    logs.append("--- Starting Smart Stooq Sync ---")
+    
+    try:
+        names = stooq_fetch.read_gpw_selected_names()
+        mapping = stooq_fetch.names_to_symbols(names)
+        mapping["WIG20 Index"] = "wig20"
+    except Exception as e:
+        logs.append(f"[ERROR] Failed to read selected names: {e}")
+        return logs, 0
 
-    for uic, filename in UIC_MAP.items():
-        name = NAME_MAP.get(uic, str(uic))
-        filepath = DATA_DIR / filename
-
+    updated_count = 0
+    
+    for name, symbol in mapping.items():
+        filepath = DATA_RAW / f"{symbol.lower()}.csv"
+        
         last_date = get_last_date(filepath)
-        if not last_date:
-            logs.append(f"[{name}] No local file/date. Skipping.")
-            continue
-
-        raw_data = fetch_ohlc(uic, limit=100)
-        new_data = []
-        for row in raw_data:
-            if parse_saxo_time(row["Time"]) > last_date:
-                new_data.append(row)
-
-        if new_data:
-            c = append_data(filepath, new_data)
-            logs.append(f"[{name}] +{c} rows (to {parse_saxo_time(new_data[-1]['Time'])})")
+        start_date = None
+        if last_date:
+            start_date = last_date + timedelta(days=1)
+            if start_date > date.today():
+                logs.append(f"[SKIP] {name} ({symbol}): Up to date ({last_date})")
+                continue
+            logs.append(f"[UPDATE] {name} ({symbol}): Fetching from {start_date}...")
         else:
-            # logs.append(f"[{name}] Up to date.")
-            pass
+            logs.append(f"[INIT] {name} ({symbol}): Fetching full history...")
+            start_date = date(2000, 1, 1)
 
+        try:
+            payload = stooq_fetch.fetch_csv(symbol, start=start_date)
+            rows_added = merge_and_save(filepath, payload)
+            if rows_added > 0:
+                logs.append(f"       -> Added {rows_added} rows.")
+                updated_count += 1
+            else:
+                logs.append("       -> No new data.")
+                
+        except Exception as e:
+            logs.append(f"       -> [FAIL] {e}")
+
+    logs.append(f"--- Sync Complete. Updated {updated_count} files. ---")
+    return logs, updated_count
+
+def run_pipeline() -> None:
+    """
+    Run the subsequent pipeline steps (cli mode, can exit).
+    """
+    try:
+        run_pipeline_safe()
+    except Exception as e:
+        print(f"Pipeline failed: {e}")
+        sys.exit(1)
+
+def run_pipeline_safe() -> None:
+    """
+    Run pipeline without sys.exit, suitable for web calls.
+    """
+    print("\n--- Running Preprocessing ---")
+    preprocess_gpw.cmd_all()
+
+    print("\n--- Running Strategies ---")
+    cmd = [
+        PYTHON_EXE,
+        "-m",
+        "strategies.run_strategies",
+        "--strategies", "all",
+        "--input", str(DATA_PROCESSED / "reports" / "combined.parquet"),
+        "--output-dir", str(REPO_ROOT / "data" / "signals"),
+    ]
+    print(f"Command: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+
+def sync_gpw_data() -> list[str]:
+    logs, count = sync_stooq_smart()
+    
+    if count == 0:
+        logs.append("--- No updates found. Skipping pipeline. ---")
+        return logs
+
+    try:
+        logs.append("--- Triggering Pipeline ---")
+        run_pipeline_safe()
+        logs.append("Pipeline executed successfully.")
+    except Exception as e:
+        logs.append(f"Pipeline failed: {e}")
     return logs
+
+def main():
+    logs, count = sync_stooq_smart()
+    for l in logs:
+        print(l)
+    
+    if count > 0:
+        run_pipeline()
+    else:
+        print("--- No updates found. Skipping pipeline. ---")
+
+if __name__ == "__main__":
+    main()
