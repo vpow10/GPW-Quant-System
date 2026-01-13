@@ -4,27 +4,25 @@ Replaces the old Saxo-based sync.
 """
 from __future__ import annotations
 
-import csv
-import sys
-import subprocess
 import os
-from datetime import datetime, timedelta, date
-from pathlib import Path
+import subprocess
+import sys
+from datetime import date, datetime, timedelta
 from io import BytesIO
+from pathlib import Path
 from typing import Any, cast
 
-import pandas as pd
 import httpx
+import pandas as pd
 from dotenv import load_dotenv
 
+from data.scripts import preprocess_gpw, stooq_fetch
 from data.scripts.saxo_auth import ensure_access_token
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.append(str(REPO_ROOT))
 
-from data.scripts import stooq_fetch
-from data.scripts import preprocess_gpw
 
 load_dotenv()
 
@@ -70,6 +68,7 @@ NAME_MAP = {
     48752: "Tauron",
 }
 
+
 def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[dict[str, Any]]:
     """Fetch intraday OHLC data from Saxo (e.g. 60-minute bars)."""
     token = ensure_access_token()
@@ -78,7 +77,7 @@ def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[d
     params: dict[str, str | int] = {
         "Uic": uic,
         "AssetType": "Stock",
-        "Horizon": horizon, 
+        "Horizon": horizon,
         "Count": limit,
         "FieldGroups": "Data",
     }
@@ -94,6 +93,7 @@ def fetch_intraday_ohlc(uic: int, horizon: int = 60, limit: int = 200) -> list[d
         data = r.json()
         return cast("list[dict[str, Any]]", data.get("Data", []))
 
+
 def get_last_date(filepath: Path) -> date | None:
     """Read the last date from a Stooq-format CSV (Data, Otwarcie, ...)."""
     if not filepath.exists():
@@ -108,9 +108,10 @@ def get_last_date(filepath: Path) -> date | None:
         print(f"Warning: Could not read date from {filepath}: {e}")
         return None
 
+
 def merge_and_save(filepath: Path, new_content: bytes) -> int:
     """
-    Merge new CSV bytes with existing file. 
+    Merge new CSV bytes with existing file.
     Returns number of new rows added (approx).
     """
     try:
@@ -137,6 +138,7 @@ def merge_and_save(filepath: Path, new_content: bytes) -> int:
     combined.to_csv(filepath, index=False)
     return len(new_df)
 
+
 def sync_stooq_smart() -> tuple[list[str], int]:
     """
     1. Read list of selected symbols.
@@ -147,7 +149,7 @@ def sync_stooq_smart() -> tuple[list[str], int]:
     """
     logs = []
     logs.append("--- Starting Smart Stooq Sync ---")
-    
+
     try:
         names = stooq_fetch.read_gpw_selected_names()
         mapping = stooq_fetch.names_to_symbols(names)
@@ -157,10 +159,10 @@ def sync_stooq_smart() -> tuple[list[str], int]:
         return logs, 0
 
     updated_count = 0
-    
+
     for name, symbol in mapping.items():
         filepath = DATA_RAW / f"{symbol.lower()}.csv"
-        
+
         last_date = get_last_date(filepath)
         start_date = None
         if last_date:
@@ -181,12 +183,13 @@ def sync_stooq_smart() -> tuple[list[str], int]:
                 updated_count += 1
             else:
                 logs.append("       -> No new data.")
-                
+
         except Exception as e:
             logs.append(f"       -> [FAIL] {e}")
 
     logs.append(f"--- Sync Complete. Updated {updated_count} files. ---")
     return logs, updated_count
+
 
 def run_pipeline() -> None:
     """
@@ -197,6 +200,7 @@ def run_pipeline() -> None:
     except Exception as e:
         print(f"Pipeline failed: {e}")
         sys.exit(1)
+
 
 def run_pipeline_safe() -> None:
     """
@@ -210,16 +214,20 @@ def run_pipeline_safe() -> None:
         PYTHON_EXE,
         "-m",
         "strategies.run_strategies",
-        "--strategies", "all",
-        "--input", str(DATA_PROCESSED / "reports" / "combined.parquet"),
-        "--output-dir", str(REPO_ROOT / "data" / "signals"),
+        "--strategies",
+        "all",
+        "--input",
+        str(DATA_PROCESSED / "reports" / "combined.parquet"),
+        "--output-dir",
+        str(REPO_ROOT / "data" / "signals"),
     ]
     print(f"Command: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
+
 def sync_gpw_data() -> list[str]:
     logs, count = sync_stooq_smart()
-    
+
     if count == 0:
         logs.append("--- No updates found. Skipping pipeline. ---")
         return logs
@@ -232,15 +240,17 @@ def sync_gpw_data() -> list[str]:
         logs.append(f"Pipeline failed: {e}")
     return logs
 
+
 def main():
     logs, count = sync_stooq_smart()
-    for l in logs:
-        print(l)
-    
+    for log in logs:
+        print(log)
+
     if count > 0:
         run_pipeline()
     else:
         print("--- No updates found. Skipping pipeline. ---")
+
 
 if __name__ == "__main__":
     main()
