@@ -14,8 +14,8 @@ class MomentumStrategy(StrategyBase):
 
     Idea:
         - look at the return over the last `lookback` bars
-        - if the return is strongly positive → go LONG
-        - if the return is strongly negative → go SHORT
+        - if the return is strongly positive -> go LONG
+        - if the return is strongly negative -> go SHORT
         - otherwise stay FLAT
 
     Parameters
@@ -23,9 +23,9 @@ class MomentumStrategy(StrategyBase):
     lookback:
         Lookback window (in days/bars) used to compute momentum.
     entry_long:
-        Threshold for going long; if momentum > entry_long → LONG.
+        Threshold for going long; if momentum > entry_long -> LONG.
     entry_short:
-        Threshold for going short; if momentum < entry_short → SHORT.
+        Threshold for going short; if momentum < entry_short -> SHORT.
     col_close:
         Column name for the closing price.
     long_only:
@@ -35,9 +35,9 @@ class MomentumStrategy(StrategyBase):
 
     Signals
     -------
-    signal =  1  → LONG
-    signal =  0  → FLAT
-    signal = -1  → SHORT
+    signal =  1  -> LONG
+    signal =  0  -> FLAT
+    signal = -1  -> SHORT
 
     Feature columns
     ---------------

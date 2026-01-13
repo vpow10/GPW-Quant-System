@@ -1,4 +1,3 @@
-# app_saxo_textual.py
 from __future__ import annotations
 
 import csv
@@ -23,7 +22,6 @@ from textual.widgets import (
 
 from data.scripts.saxo_client import SaxoClient
 
-# ---- konfig / .env ----
 load_dotenv()
 
 
@@ -39,7 +37,7 @@ def load_gpw_uics() -> list[tuple[str, int]]:
             try:
                 uic = int(row["UIC"])
                 name = row["Name"]
-                rows.append((name, uic))  # tylko nazwa widoczna
+                rows.append((name, uic))
             except Exception:
                 continue
     return rows
@@ -101,7 +99,7 @@ class OrderUI(App):
 
                 yield Input(
                     value="",
-                    placeholder="float (wymagane dla Limit)",
+                    placeholder="float (needed for Limit)",
                     id="price",
                     disabled=True,
                 )
@@ -126,11 +124,11 @@ class OrderUI(App):
         if order_type == "Limit":
             price_input.disabled = False
             if not price_input.value:
-                price_input.placeholder = "float (wymagane dla Limit)"
+                price_input.placeholder = "float (needed for Limit)"
         else:
             price_input.value = ""
             price_input.disabled = True
-            price_input.placeholder = "float (wymagane dla Limit)"
+            price_input.placeholder = "float (needed for Limit)"
 
     def on_mount(self) -> None:
         otype_val = self.query_one("#otype", Select).value
@@ -172,9 +170,9 @@ class OrderUI(App):
         price: Optional[float] = float(price_raw) if price_raw else None
 
         if otype == "Limit" and price is None:
-            raise ValueError("Dla OrderType=Limit podaj Price.")
+            raise ValueError("For OrderType=Limit, provide Price.")
         if otype == "Market" and price is not None and price_raw != "":
-            raise ValueError("Price ma sens tylko dla OrderType=Limit.")
+            raise ValueError("Price makes sense only for OrderType=Limit.")
 
         return {
             "uic": uic,
@@ -204,30 +202,30 @@ class OrderUI(App):
             payload = self.client.build_order_payload(**vals)
             self._show_payload(payload)
         except Exception as e:
-            self._set_status(f"Błąd walidacji: {e}")
+            self._set_status(f"Validation error: {e}")
             return
 
         mode = "PLACE" if place else "PREVIEW"
-        self._set_status(f"[{mode}] wysyłanie...")
+        self._set_status(f"[{mode}] sending...")
         try:
             if place:
                 resp = self.client.place_order(payload)
             else:
                 resp = self.client.preview_order(payload)
             self._show_response(resp)
-            self._set_status("Zamówienie złożone" if place else "Podgląd wykonany")
+            self._set_status("Order placed" if place else "Preview done")
         except Exception as e:
-            self._set_status(f"[{mode}] błąd: {e}")
+            self._set_status(f"[{mode}] error: {e}")
 
-    # ---- zdarzenia ----
+    # ---- events ----
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "build":
             try:
                 payload = self.client.build_order_payload(**self._read_form())
                 self._show_payload(payload)
-                self._set_status("Payload zbudowany.")
+                self._set_status("Payload built.")
             except Exception as e:
-                self._set_status(f"Błąd: {e}")
+                self._set_status(f"Error: {e}")
         elif event.button.id == "preview":
             await self._run_mode(place=False)
         elif event.button.id == "place":
@@ -237,8 +235,7 @@ class OrderUI(App):
             self.query_one("#price", Input).value = ""
             self.query_one("#payload", Log).clear()
             self.query_one("#response", Log).clear()
-            self._set_status("Wyczyszczono.")
-            # przywróć stan pola Price wg aktualnego OrderType
+            self._set_status("Cleared.")
             otype = self.query_one("#otype", Select).value
             if isinstance(otype, str):
                 self._toggle_price_field(otype)

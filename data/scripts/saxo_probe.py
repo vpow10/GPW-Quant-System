@@ -25,14 +25,6 @@ OPENAPI_BASE = os.getenv("SAXO_OPENAPI_BASE")
 TOKEN = os.getenv("SAXO_TOKEN")
 
 
-def _require_token() -> str:
-    """Checks if API TOKEN is given in .env file."""
-    if not TOKEN:
-        print("SAXO_TOKEN missing. Put your 24-hour token in .env (SAXO_TOKEN=...).")
-        sys.exit(1)
-    return TOKEN
-
-
 def api_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     """Minimal GET wrapper with useful error text."""
     token = ensure_access_token()

@@ -34,10 +34,9 @@ SYMBOLS = [
 
 # Hyperparameters
 TEST_SIZE = 0.20
-VAL_SIZE = 0.15  # of the remaining 80%? Or total?
-# Let's do: Test=20%, Val=15%, Train=65%
-NUM_EPOCHS = 1000  # Reduced from 6000
-PATIENCE = 50  # Early stopping patience
+VAL_SIZE = 0.15
+NUM_EPOCHS = 1000
+PATIENCE = 50
 BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 HIDDEN_SIZE = 32
@@ -51,7 +50,6 @@ LAGS = 24
 def get_features_list():
     """Returns list of feature column names."""
     feat = [f"log_return_lag{lag}" for lag in range(1, LAGS + 1)]
-    # Add volume features
     feat += [f"log_vol_chg_lag{lag}" for lag in range(1, LAGS + 1)]
     return feat
 
@@ -69,7 +67,6 @@ def load_and_process_data(path: str):
     ts = ts.loc[:, ~ts.columns.str.contains("^Unnamed")]
 
     required_cols = ["date", "symbol", "ret_1d", "volume"]
-    # minimal check
     for c in required_cols:
         if c not in ts.columns:
             raise ValueError(f"Missing column: {c}")
@@ -80,12 +77,8 @@ def load_and_process_data(path: str):
 def preprocess_symbol_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("date").copy()
 
-    # Target
     df["ret_1d_log"] = np.log1p(df["ret_1d"])
 
-    # Feature Engineering
-    # Volume Change
-    # avoid log(0)
     df["volume"] = df["volume"].replace(0, 1)
     df["vol_log"] = np.log(df["volume"])
     df["vol_log_chg"] = df["vol_log"].diff()
@@ -119,36 +112,20 @@ def train_model_for_symbol(symbol: str, df_symbol: pd.DataFrame):
         print("Not enough data to train. Skipping.")
         return
 
-    # 2. Fit Scaler (Train only)
+    # 2. Fit Scaler
     scaler = TimeSeriesScaler()
     X_train_raw = train_df[FEATURES].to_numpy()  # (N, features)
     scaler.fit(X_train_raw)
 
     # 3. Transform & Prepare Tensors
-    # Helper to transform and convert
     def get_tensors(dframe):
         X_np = scaler.transform(dframe[FEATURES].to_numpy())
         y_np = dframe[TARGET].to_numpy()
 
-        # We need to reshape carefully
-        # FEATURES order is: [ret_lag1, ret_lag2..., vol_lag1, vol_lag2...]
-        # But we want (seq_len, input_size) where input_size=2 (ret, vol)
-        # So we need to reorder or reshape.
-
-        # Current flat structure:
-        # [ret_l1, ret_l2... ret_l24, vol_l1... vol_l24]
-        # We want:
-        # t=1: [ret_l1, vol_l1]
-        # t=2: [ret_l2, vol_l2]
-        # ...
-
-        # Let's reshape manually using numpy
         N = X_np.shape[0]
         X_reshaped = np.zeros((N, SEQ_LEN, INPUT_SIZE))
 
-        # ret lags
         X_reshaped[:, :, 0] = X_np[:, :SEQ_LEN]
-        # vol lags
         X_reshaped[:, :, 1] = X_np[:, SEQ_LEN:]
 
         X_t = torch.tensor(X_reshaped, dtype=torch.float32)
@@ -174,7 +151,6 @@ def train_model_for_symbol(symbol: str, df_symbol: pd.DataFrame):
     for epoch in range(NUM_EPOCHS):
         model.train()
         epoch_loss = 0.0
-        # Shuffle batches
         for X_b, y_b in create_batches(X_train, y_train, BATCH_SIZE):
             optimizer.zero_grad()
             out = model(X_b)
@@ -245,7 +221,6 @@ def main():
             print(f"No data for {symbol}")
             continue
 
-        # Preprocess (add lags)
         df_proc = preprocess_symbol_data(df_sym)
 
         train_model_for_symbol(symbol, df_proc)

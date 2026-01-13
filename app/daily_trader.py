@@ -239,9 +239,7 @@ async def main():
     # 3. Allocation & Sizing logic
     final_orders = []
 
-    # Map UIC to held quantity for Exits
-    # (Assuming single account, summing if multiple positions for same uic?? Saxo netpositions is 1 per uic usually)
-    held_map = held_qty_map  # Reuse our map
+    held_map = held_qty_map
 
     entries = [c for c in candidates if c["action"] in ("BUY", "SHORT")]
     exits = [c for c in candidates if c["action"] in ("SELL", "COVER")]

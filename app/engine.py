@@ -76,12 +76,10 @@ class LiveTrader:
 
         symbol_stem = filename.replace(".csv", "")
 
-        # 1. Preprocess (load data)
         df = process_symbol(symbol_stem)
         if df is None or df.empty:
             return {"error": f"No data for {symbol_stem}"}
 
-        # 2. Load Strategy
         strat_cfg = STRATEGY_CONFIG.get(strategy_name, {})
 
         try:
@@ -91,19 +89,14 @@ class LiveTrader:
 
         strategy = strategy_cls(**strat_cfg) if strat_cfg else strategy_cls()
 
-        # 3. Generate Signals
-        # Strategies expect 'date', 'close', etc. preprocess_gpw gives exactly that.
         try:
             df_sig = strategy.generate_signals(df)
         except Exception as e:
             return {"error": f"Strategy failed: {e}"}
 
-        # 4. Get the LAST signal (for "tomorrow")
         last_row = df_sig.iloc[-1]
 
-        # Convert last_row to dict to include all metrics (momentum, z-score, etc.)
         result = cast("dict[str, Any]", last_row.to_dict())
-        # Ensure primitive types for JSON/usage
         if hasattr(result["date"], "strftime"):
             result["date"] = result["date"].strftime("%Y-%m-%d")
         else:
@@ -157,31 +150,23 @@ class LiveTrader:
         if "Data" not in raw:
             return []
 
-        # Parse Saxo NetPositions
-        # Usually list under "Data"
         positions = []
         for item in raw["Data"]:
-            # NetPositionBase has 'Uic', 'Amount', 'NetPositionId'
-            # Sim vs Live consistency varies. Check for nested structure first.
             if "NetPositionBase" in item:
                 base = item["NetPositionBase"]
                 view = item.get("NetPositionView", {})
 
                 uic = base.get("Uic")
                 qty = base.get("Amount", 0)
-                # If Amount is 0, check AmountLong/Short? Usually Amount is sufficient.
 
                 p = {
                     "uic": uic,
                     "qty": qty,
                     "id": item.get("NetPositionId"),
                     "price": view.get("CurrentPrice", 0.0),
-                    # MarketValueOpen can be unreliable (negative?) if market closed.
-                    # We will rely on re-calculating value in the trader script using latest data.
                     "market_value": view.get("MarketValueOpen", 0.0),
                 }
             else:
-                # Flat structure (fallback)
                 p = {
                     "uic": item.get("Uic"),
                     "qty": item.get("Amount", 0),

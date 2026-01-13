@@ -81,9 +81,6 @@ class RSIStrategy(StrategyBase):
 
         sig_arr = np.zeros(len(df))
 
-        # Iterative for state stability
-        # But slow? No, Python loop for 2k rows is fine.
-
         curr_sig = 0
         for i in range(self.period, len(df)):
             val = rsi_vals[i]
@@ -99,16 +96,12 @@ class RSIStrategy(StrategyBase):
                 else:
                     curr_sig = -1  # Go short
             else:
-                # Neutral Zone Logic
-                # If we are Long (1) and RSI > exit_long_level (e.g. 50) -> Close (0)
                 if curr_sig == 1 and val > self.exit_long_level:
                     curr_sig = 0
 
-                # If we are Short (-1) and RSI < exit_short_level (e.g. 50) -> Close (0)
                 if curr_sig == -1 and val < self.exit_short_level:
                     curr_sig = 0
 
-                # Otherwise hold current signal
                 pass
 
             sig_arr[i] = curr_sig

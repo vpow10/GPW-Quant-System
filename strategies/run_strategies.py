@@ -28,16 +28,13 @@ def run_strategies(
 
         signals = strategy.generate_signals(df)
 
-        # 1) pełny Parquet
         parquet_path = output_dir / f"{name}.parquet"
         signals.to_parquet(parquet_path, index=False)
 
-        # 2) CSV bez params (czytelniejszy)
         csv_path = output_dir / f"{name}.csv"
         signals_no_params = signals.drop(columns=["params"], errors="ignore")
         signals_no_params.to_csv(csv_path, index=False)
 
-        # 3) light CSV z najważniejszymi kolumnami
         light_cols = ["symbol", "date"]
         for c in ["close", "momentum", "zscore", "signal"]:
             if c in signals_no_params.columns:

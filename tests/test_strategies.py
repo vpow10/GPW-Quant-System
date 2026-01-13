@@ -55,13 +55,11 @@ def test_strategy_instantiation_and_signals(strategy_name: str, sample_df: pd.Da
 
     config = STRATEGY_CONFIG.get(strategy_name, {})
 
-    # Instantiate
     try:
         strategy = cls(**config) if config else cls()
     except Exception as e:
         pytest.fail(f"Failed to instantiate {strategy_name}: {e}")
 
-    # Generate signals
     try:
         out = strategy.generate_signals(sample_df)
     except FileNotFoundError as e:

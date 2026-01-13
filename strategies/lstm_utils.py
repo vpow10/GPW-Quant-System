@@ -32,7 +32,6 @@ class LSTMModel(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (batch, seq_len, input_size)
         out, _ = self.lstm(x)
-        # Use the last hidden state from the last sequence step
         last_hidden = out[:, -1, :]
         out = self.fc(last_hidden)
         return out
@@ -53,7 +52,6 @@ class TimeSeriesScaler:
         """Compute mean and std to be used for later scaling."""
         self.mean = np.mean(X, axis=0)
         self.scale = np.std(X, axis=0)
-        # Avoid division by zero
         self.scale[self.scale == 0] = 1.0
 
     def transform(self, X: np.ndarray) -> np.ndarray:
@@ -102,14 +100,6 @@ def prepare_lstm_data(
         X: tensor (N, seq_len, input_size)
         y: tensor (N, 1) or None
     """
-    # This logic assumes the 'features' list is ordered by time (lag1, lag2...)
-    # OR that we want to treat each feature as a separate channel?
-    # Original code: X_train_flat.view(-1, SEQ_LEN, INPUT_SIZE)
-    # This implies features was [lag1, lag2, lag3, lag4] -> seq_len=4, input=1
-
-    # We will stick to that logic for now, but explicit is better.
-
-    # Convert to numpy
     if hasattr(df, "to_numpy"):
         X_numpy = df[features].to_numpy()
         if target:
@@ -123,18 +113,12 @@ def prepare_lstm_data(
         else:
             y_numpy = None
     else:
-        # Pandas fallback
         X_numpy = df[features].to_numpy()
         if target:
             y_numpy = df[target].to_numpy()
         else:
             y_numpy = None
 
-    # Reshape
-    # X_numpy is (N, total_features)
-    # We want (N, seq_len, input_size) where seq_len * input_size = total_features
-
-    # Validate
     if X_numpy.shape[1] != seq_len * input_size:
         raise ValueError(
             f"Feature count {X_numpy.shape[1]} does not match reshaped size "
@@ -155,7 +139,7 @@ def create_batches(
 ) -> Generator[Tuple[torch.Tensor, torch.Tensor], None, None]:
     """Yields batches of X and y."""
     n_samples = len(X)
-    indices = torch.randperm(n_samples)  # Shuffle for training
+    indices = torch.randperm(n_samples)
 
     for i in range(0, n_samples, batch_size):
         batch_indices = indices[i : i + batch_size]
