@@ -15,9 +15,7 @@ from .saxo_auth import ensure_access_token
 
 load_dotenv()
 
-OPENAPI_BASE: str = os.getenv(
-    "SAXO_OPENAPI_BASE", "https://gateway.saxobank.com/sim/openapi"
-)
+OPENAPI_BASE: str = os.getenv("SAXO_OPENAPI_BASE", "https://gateway.saxobank.com/sim/openapi")
 ACCOUNT_KEY: Optional[str] = os.getenv("SAXO_ACCOUNT_KEY")
 TIMEOUT: int = int(os.getenv("SAXO_CLIENT_TIMEOUT", "30"))
 

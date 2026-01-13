@@ -155,11 +155,7 @@ class OrderUI(App):
         asset = asset_val
 
         side_rs = self.query_one("#side", RadioSet)
-        side = (
-            "Buy"
-            if side_rs.pressed_button and side_rs.pressed_button.id == "buy"
-            else "Sell"
-        )
+        side = "Buy" if side_rs.pressed_button and side_rs.pressed_button.id == "buy" else "Sell"
 
         amount_raw = self.query_one("#amount", Input).value.strip() or "1"
         try:
