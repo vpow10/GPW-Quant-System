@@ -5,5 +5,6 @@ pre-commit==3.4.0
 mypy==1.6.0
 numpy==2.2.6
 pandas==2.2.3
+pyarrow==17.0.0
 pytest==7.3.1
 matplotlib==3.10.8
