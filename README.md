@@ -13,17 +13,23 @@ Aby korzystać z handlu rzeczywistego lub pobierać dane live z Saxo Bank, musis
 3. Skonfiguruj swoją aplikację:
     - nazwa aplikacji według uznania
     - opis aplikacji według uznania
-    - przekierowanie URI na np. `http://localhost/oauth/callback` (ważne, aby potem pokrywało się z wartością z pliku .env) w ustawieniach aplikacji Saxo
+    - przekierowanie URI na np. `http://localhost:8765/oauth/callback` (ważne, aby podać port, mimo tego, że później nie podajemy go w pliku `.env`) w ustawieniach aplikacji Saxo
     - Grant Type: Code
     - Access Control: zaznaczamy flagę `Allow this app to be enabled for trading`
-4. Skopiuj App Key, App URL i App Secret do pliku `.env` w katalogu głównym projektu (jest przykładowy plik `.env.example`).
-5. Uzyskanie Account Key nie jest tak oczywiste i niestety Saxo nie udostępnia go bezpośrednio w panelu deweloperskim. Aby go uzyskać:
+4. Stwórz plik `.env` w katalogu głównym projektu w oparciu o plik `.env.example`, dla systemu Linux/MacOS możesz użyć polecenia:
+    ```bash
+    cp .env.example .env
+    ```
+
+    *Ważne:* W pliku .env `APP_URL` musi być zgodny z tym, który podałeś podczas konfiguracji aplikacji w Saxo Bank **(nie podajemy portu**, dla przykładu powyżej będzie to `http://localhost/oauth/callback`).
+5. Skopiuj App Key, App URL i dowolny z dwóch App Secret do pliku `.env`.
+6. Uzyskanie Account Key nie jest tak oczywiste i niestety Saxo nie udostępnia go bezpośrednio w panelu deweloperskim. Aby go uzyskać:
     - wejdź na stronę [SaxoTrader](https://www.saxotrader.com/sim/login/en) i zaloguj się na swoje konto demo
     - przy pierwszym logowaniu należy skonfigurować swoje konto demo (ustawienia, waluta bazowa itp.) 
     - wybierz produkty inwestycyjne, które Cię interesują, jednak dla testów na GPW zalecamy wybór: CFD, akcje, ETF, opcje giełdowe
     - po zalogowaniu włącz narzędzia deweloperskie w przeglądarce (F12) i przejdź do zakładki "Network"
     - odśwież stronę (F5) i w filtrze wpisz `/v1/accounts` aby znaleźć odpowiednie żądanie
-    - w odpowiedzi JSON znajdziesz pole `AccountKey`, które należy skopiować do pliku `.env` jako `SAXO_ACCOUNT_KEY`
+    - w odpowiedzi JSON znajdziesz pole `AccountKey`, które należy skopiować do pliku `.env` jako `SAXO_ACCOUNT_KEY` (uwaga: skopiuj bez cudzysłowów)
 
 ### 2. Konfiguracja środowiska
 Poniższe kroki należy wykonywać z katalogu głównego projektu.

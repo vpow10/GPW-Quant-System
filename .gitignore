@@ -32,3 +32,6 @@ data/signals/
 
 # backtests
 data/backtests/*
+
+# reports
+automation/*_report.json
