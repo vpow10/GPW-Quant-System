@@ -65,15 +65,18 @@ def main() -> None:
         "--strategies",
         "-s",
         nargs="+",
-        choices=all_names,
         default=all_names,
-        help="Which strategies to run (default: all).",
+        help="Which strategies to run (default: all). Pass 'all' to run all strategies explicitly.",
     )
 
     args = parser.parse_args()
 
+    selected_strategies = args.strategies
+    if "all" in selected_strategies:
+        selected_strategies = all_names
+
     run_strategies(
-        strategy_names=args.strategies,
+        strategy_names=selected_strategies,
         input_path=args.input,
         output_dir=args.output_dir,
     )
