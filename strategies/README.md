@@ -17,7 +17,7 @@ Ten folder zawiera implementacje logiki tradingowej, skrypty generujące sygnał
 - **`lstm_strategy.py`**: Strategia wykorzystująca prostą sieć neuronową LSTM do predykcji cen.
 - **`hybrid_lstm_strategy.py`**: Zaawansowana strategia łącząca LSTM z podejściem klasyfikacyjnym i dodatkowymi cechami (wskaźniki techniczne).
 
-### Uczenie Maszynowe (AI)
+### Uczenie Maszynowe
 - **`train_lstm.py`** / **`train_hybrid_lstm.py`**: Skrypty do trenowania modeli sieci neuronowych.
 - **`NNmodels.py`**: Definicje architektur sieci neuronowych (PyTorch).
 - **`hybrid_features.py`**: Inżynieria cech (Feature Engineering) dla modelu hybrydowego.
@@ -44,7 +44,7 @@ python -m strategies.run_strategies \
 
 **Alternatywnie:** Możesz zdefiniować nową strategię w `config_strategies.py`, wykorzystując istniejącą klasę (np. `RsiStrategy`), ale zmieniając jej parametry (np. `window=20` zamiast `14`). Nie wymaga to tworzenia nowego pliku Python.
 
-### 3. Trenowanie Modeli AI
+### 3. Trenowanie Modeli LSTM
 
 Jeśli chcesz przetrenować model LSTM na nowych danych:
 
