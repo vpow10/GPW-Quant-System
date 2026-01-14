@@ -358,7 +358,7 @@ async function startLogin() {
     const lbl = document.getElementById('auth-status-label');
     const btn = document.getElementById('btn-login');
 
-    lbl.textContent = "Logging in... Check browser window.";
+    lbl.textContent = "Logging in... Click the link displayed in the terminal and then check browser window to login.";
     btn.disabled = true;
 
     try {

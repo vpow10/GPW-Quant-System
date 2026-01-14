@@ -64,6 +64,12 @@ python -m app.web
 ```
 Dashboard będzie dostępny pod adresem: `http://localhost:5000`
 
+Podczas logowania z aplikacji webowej, należy po kliknięciu przycisku logowania wejść w link 
+wyświetlony w terminalu i zalogować się w wyświelonym oknie w przeglądarce. 
+
+Fetchowanie danych z bieżącego dnia nie jest możliwe w godzinach otwarcia giełdy.
+W przypadku próby synchronizacji danych z bieżącego dnia, system pobierze dane do "wczorajszego" dnia, 
+a gdy te będą pobrane już wcześniej - nie wykona żadnej akcji.
 ## Struktura Projektu
 
 > **Wskazówka:** Wszystkie poniższe katalogi zawierają własny plik `README.md` ze szczegółową dokumentacją techniczną.
