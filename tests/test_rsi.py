@@ -44,7 +44,6 @@ def test_rsi_calculation(sample_data):
     assert df["rsi"].min() >= 0
     assert df["rsi"].max() <= 100
 
-    # Check NaN handling for initial period
     assert np.isnan(df["rsi"].iloc[0])
 
 
@@ -62,7 +61,7 @@ def test_rsi_standard_signals(sample_data):
 
 
 def test_rsi_long_only_exit():
-    df = pd.DataFrame({"close": np.random.randn(100)})  # placeholder
+    df = pd.DataFrame({"close": np.random.randn(100)})
     df["rsi"] = np.nan
 
     rsi_vals = [50] * 10 + [20] + [40] * 9 + [60] + [50] * 5

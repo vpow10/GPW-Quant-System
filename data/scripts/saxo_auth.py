@@ -176,7 +176,7 @@ class SaxoPKCE:
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
             "code_verifier": code_verifier,
-            "redirect_uri": self.app_url,  # Some providers strictly require this even on refresh
+            "redirect_uri": self.app_url,
         }
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -187,9 +187,6 @@ class SaxoPKCE:
         if use_client_secret:
             secret: str = cast(str, APP_SECRET)
             auth: tuple[str, str] = (self.app_key, secret)
-            # Some implementations might want client_id in body too, but Basic Auth is standard
-            # for confidential clients. We'll add it to body just in case it's not in Auth header
-            # or if the server expects it there for consistency.
             data["client_id"] = self.app_key
         else:
             auth = ("", "")
@@ -369,7 +366,6 @@ def force_refresh() -> None:
         print("[refresh] No refresh token available. Please login first.")  # noqa: T201
         return
 
-    # We purposefully don't check expiration, just try to refresh
     pkce = SaxoPKCE(APP_KEY or "", APP_URL or "", AUTH_BASE)
     try:
         resp = pkce.refresh(tokens.refresh_token, tokens.code_verifier)

@@ -73,7 +73,6 @@ def run_login():
 
         def safe_login():
             try:
-                # Assuming default port 8765 is free
                 saxo_login(port=8765)
                 status["success"] = True
                 status["message"] = "Login successful"
@@ -330,7 +329,6 @@ def get_logs(mode):
         if not os.path.exists(path):
             return jsonify({"lines": [f"Log file {path} not found."]})
         with open(path, "r") as f:
-            # Read last 100 lines
             lines = f.readlines()
             return jsonify({"lines": lines[-100:]})
     except Exception as e:
@@ -351,8 +349,6 @@ def keep_alive_loop():
 
 
 if __name__ == "__main__":
-    # Start background thread
-    # Daemon=True ensures it dies when main process dies
     t = threading.Thread(target=keep_alive_loop, daemon=True)
     t.start()
     app.run(debug=True, port=5000)

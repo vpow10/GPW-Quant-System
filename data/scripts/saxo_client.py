@@ -16,7 +16,7 @@ load_dotenv()
 
 
 class SaxoClient:
-    """Minimalny klient do składania / podglądu zleceń (SIM) + log JSONL."""
+    """Client for Saxo Bank OpenAPI"""
 
     def __init__(
         self,
@@ -32,7 +32,7 @@ class SaxoClient:
         self.log_file = Path(log_file)
         self.log_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # ---- fabryka z ENV ----
+    # ---- factory from ENV ----
     @classmethod
     def from_env(cls) -> "SaxoClient":
         openapi_base: str = os.getenv(
@@ -42,7 +42,7 @@ class SaxoClient:
         if account_key:
             account_key = account_key.strip()
         if not account_key:
-            raise SystemExit("Brak SAXO_ACCOUNT_KEY w .env — wymagane do składania zleceń.")
+            raise SystemExit("Missing SAXO_ACCOUNT_KEY in .env — required for placing orders.")
         timeout: int = int(os.getenv("SAXO_CLIENT_TIMEOUT", "30"))
         journal_dir = Path(os.getenv("JOURNAL_DIR", "journals"))
         return cls(
@@ -117,7 +117,7 @@ class SaxoClient:
         manual_order: bool = False,
     ) -> dict[str, Any]:
         if not self.account_key:
-            raise SystemExit("Brak SAXO_ACCOUNT_KEY w .env — wymagane do składania zleceń.")
+            raise SystemExit("Missing SAXO_ACCOUNT_KEY in .env — required for placing orders.")
 
         payload: dict[str, Any] = {
             "AccountKey": self.account_key,
@@ -132,7 +132,7 @@ class SaxoClient:
 
         if order_type.lower() != "market":
             if price is None:
-                raise SystemExit("Dla OrderType≠Market wymagany jest price (OrderPrice).")
+                raise SystemExit("For OrderType!=Market, price (OrderPrice) is required.")
             payload["OrderPrice"] = price
 
         return payload
@@ -146,7 +146,7 @@ class SaxoClient:
         return resp
 
     def get_net_positions(self) -> dict[str, Any]:
-        """Pobiera otwarte pozycje (NetPositions)."""
+        """Fetch open positions (NetPositions)."""
         url = f"{self.openapi_base}/port/v1/netpositions/me"
         with httpx.Client(timeout=self.timeout) as c:
             r = c.get(url, headers=self._headers())

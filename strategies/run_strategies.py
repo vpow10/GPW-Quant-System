@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from strategies.config_strategies import STRATEGY_CONFIG, STRATEGY_REGISTRY
+from strategies.config_strategies import STRATEGY_CONFIG, get_strategy_class
 
 
 def run_strategies(
@@ -18,26 +18,23 @@ def run_strategies(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for name in strategy_names:
-        if name not in STRATEGY_REGISTRY:
+        try:
+            strategy_cls = get_strategy_class(name)
+        except KeyError:
             continue
 
-        strategy_cls = STRATEGY_REGISTRY[name]
         params = STRATEGY_CONFIG.get(name, {})
-
-        strategy = strategy_cls(**params)
+        strategy = strategy_cls(**params) if params else strategy_cls()
 
         signals = strategy.generate_signals(df)
 
-        # 1) pełny Parquet
         parquet_path = output_dir / f"{name}.parquet"
         signals.to_parquet(parquet_path, index=False)
 
-        # 2) CSV bez params (czytelniejszy)
         csv_path = output_dir / f"{name}.csv"
         signals_no_params = signals.drop(columns=["params"], errors="ignore")
         signals_no_params.to_csv(csv_path, index=False)
 
-        # 3) light CSV z najważniejszymi kolumnami
         light_cols = ["symbol", "date"]
         for c in ["close", "momentum", "zscore", "signal"]:
             if c in signals_no_params.columns:
@@ -62,19 +59,24 @@ def main() -> None:
         default=Path("data/signals"),
         help="Directory where signals will be saved.",
     )
+
+    all_names = list(STRATEGY_CONFIG.keys())
     parser.add_argument(
         "--strategies",
         "-s",
         nargs="+",
-        choices=list(STRATEGY_REGISTRY.keys()),
-        default=list(STRATEGY_REGISTRY.keys()),
-        help="Which strategies to run (default: all).",
+        default=all_names,
+        help="Which strategies to run (default: all). Pass 'all' to run all strategies explicitly.",
     )
 
     args = parser.parse_args()
 
+    selected_strategies = args.strategies
+    if "all" in selected_strategies:
+        selected_strategies = all_names
+
     run_strategies(
-        strategy_names=args.strategies,
+        strategy_names=selected_strategies,
         input_path=args.input,
         output_dir=args.output_dir,
     )

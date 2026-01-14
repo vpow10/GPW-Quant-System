@@ -1,34 +1,64 @@
-# App
+# Moduł Aplikacji (App)
 
-This directory contains the main application logic, including the Web Dashboard and the Execution Engine.
+Katalog ten zawiera główną logikę biznesową systemu, w tym interfejsy użytkownika (Web oraz TUI) oraz silniki wykonywania transakcji (Execution Engines).
 
-## Key Files
+## Kluczowe Pliki
 
-- **`web.py`**: Flask web application server. Serves the Dashboard UI and API endpoints.
-- **`daily_trader.py`**: The primary script for Live/Paper trading. It fetches data, generates signals, calculates target positions, and executes trades via the Saxo API.
-- **`engine.py`**: Business logic layer bridging the Saxo Client and Strategy logic.
-- **`intraday_trader.py`**: (Experimental) Logic for intraday trading operations.
+Oto opis najważniejszych komponentów w tym module:
 
-## Usage Examples
+- **`web.py`**: Serwer aplikacji webowej oparty na frameworku Flask. Obsługuje Dashboard dostępny w przeglądarce oraz wystawia endpointy API dla frontendu.
+- **`daily_trader.py`**: Główny skrypt do handlu w interwale dziennym (Daily Trading). Odpowiada za pobieranie danych, generowanie sygnałów na podstawie strategii, obliczanie wielkości pozycji oraz (opcjonalnie) składanie zleceń w Saxo Banku.
+- **`app.py`**: Aplikacja TUI (Text User Interface) zbudowana w bibliotece `Textual`. Służy do szybkiego, ręcznego składania zleceń i podglądu rynku z poziomu terminala.
+- **`dashboard.py`**: Alternatywny Dashboard w formie TUI (Textual), umożliwiający monitorowanie stanu konta i systemu bezpośrednio w terminalu.
+- **`intraday_trader.py`**: Moduł do handlu intraday (na świecach godzinowych).
+- **`engine.py`**: Warstwa logiki biznesowej łącząca klienta Saxo Banku z logiką strategii inwestycyjnych.
+- **`sync.py`**: Narzędzia do synchronizacji danych między lokalną bazą a zewnętrznymi źródłami (Saxo, GPW).
 
-### Running the Web Dashboard
+## Instrukcja Użycia
+
+### 1. Uruchomienie Web Dashboardu
+
+Aby uruchomić interfejs webowy do monitorowania systemu i analizy wyników:
+
 ```bash
-# Starts the web server on http://localhost:5000
+# Uruchamia serwer na http://localhost:5000
 python -m app.web
 ```
 
-### Running the Daily Trader
-This is typically run via `automation/run_daily.sh` (Cron), but can be run manually:
+### 2. Uruchomienie Daily Tradera
+
+Skrypt ten jest zazwyczaj uruchamiany automatycznie przez crona (`automation/run_daily.sh`), ale można go wywołać ręcznie:
 
 ```bash
-# Dry Run (no real orders)
+# Tryb symulacji (Dry Run) - tylko logowanie, bez składania zleceń
 python -m app.daily_trader --strategy rsi_14d_basic --allocation-pct 0.1
 
-# Real Execution (DANGER: Places orders)
+# Tryb rzeczywisty (LIVE) - SKŁADA ZLECENIA NA RYNKU
 python -m app.daily_trader --strategy rsi_14d_basic --allocation-pct 0.1 --execute
 ```
 
-### Environment Variables
-Ensure `.env` contains:
-- `SAXO_URL`, `SAXO_APP_KEY`, `SAXO_APP_SECRET` (for trading)
-- `FLASK_APP=app.web` (for flask commands)
+### 3. Uruchomienie TUI Dashboardu
+
+Jeśli wolisz interfejs tekstowy w terminalu:
+
+```bash
+python -m app.dashboard
+```
+
+### 4. Narzędzie do składania zleceń (TUI)
+
+Aby szybko złożyć zlecenie ręcznie z poziomu terminala:
+
+```bash
+python -m app.app
+```
+
+## Konfiguracja
+
+Upewnij się, że w głównym katalogu projektu znajduje się plik `.env` zawierający niezbędne klucze API Saxo Banku:
+
+- `SAXO_URL`
+- `SAXO_APP_KEY`
+- `SAXO_APP_SECRET`
+- `SAXO_AUTH_ENDPOINT`
+- `SAXO_TOKEN_ENDPOINT`

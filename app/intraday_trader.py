@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 from app.engine import LiveTrader
 from app.sync import NAME_MAP, UIC_MAP, fetch_intraday_ohlc
-from strategies.config_strategies import STRATEGY_CONFIG, STRATEGY_REGISTRY
+from strategies.config_strategies import STRATEGY_CONFIG, get_strategy_class
 
 load_dotenv()
 
@@ -170,10 +170,11 @@ async def main() -> None:
 
     trader = LiveTrader()
 
-    strat_cls = STRATEGY_REGISTRY.get(args.strategy)
     strat_cfg = STRATEGY_CONFIG.get(args.strategy, {})
-    if not strat_cls:
-        print(f"[!] Strategy {args.strategy} not found in registry.")
+    try:
+        strat_cls = get_strategy_class(args.strategy)
+    except KeyError:
+        print(f"[!] Strategy {args.strategy} not found.")
         return
 
     strategy = strat_cls(**strat_cfg) if strat_cfg else strat_cls()
@@ -289,15 +290,10 @@ async def main() -> None:
     print(f"\nTotal Active Signals (Changes): {len(candidates)}")
     if not candidates:
         print("No signal changes this run. No trades.")
-        # Do not return early, proceed to report generation
 
-    # User simplified logic: Exposure = TotalValue - TotalCash (in account currency, presumably EUR)
-    # This avoids relying on manual position tracking
     current_exposure_eur = max(0.0, total_value - total_cash)
     global_remaining = args.max_capital - current_exposure_eur
 
-    # Back-calculate PLN for consistent logging
-    # Back-calculate PLN for consistent logging
     calculated_exposure_pln = current_exposure_eur * args.fx_rate
 
     print("\n--- Limit Check (Intraday) ---")
@@ -352,11 +348,9 @@ async def main() -> None:
                 qty = int(allocated_pln / price)
 
                 if qty < 1:
-                    # try minimum order = 1 if we can afford it
                     if allocated_pln >= price:
                         qty = 1
                     else:
-                        # not enough allocation to buy 1 share
                         continue
                 side = "Buy" if pick["action"] == "BUY" else "Sell"
 

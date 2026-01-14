@@ -7,7 +7,7 @@ import csv
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from dotenv import load_dotenv
@@ -23,8 +23,6 @@ OPENAPI_BASE = (
     os.getenv("SAXO_OPENAPI_BASE") or "https://gateway.saxobank.com/sim/openapi"
 ).rstrip("/")
 
-# Mapping: UIC -> Filename (basename in data/raw)
-# Based on user request and existing file structure.
 UIC_MAP = {
     32368: "acp.csv",  # Asseco Poland SA
     45348: "bhw.csv",  # Bank Handlowy w Warszawie SA
@@ -76,7 +74,7 @@ def get_last_date(filepath: Path) -> str | None:
                 return None
             for row in reader:
                 if row:
-                    last_date = row[0]  # Assuming first column is Data/Date
+                    last_date = row[0]
     except Exception as e:
         print(f"Warning: Could not read {filepath}: {e}")
         return None
@@ -105,7 +103,7 @@ def fetch_ohlc(uic: int, limit: int = 100) -> list[dict[str, Any]]:
             return []
 
         data = r.json()
-        return data.get("Data", [])
+        return cast(list[dict[str, Any]], data.get("Data", []))
 
 
 def parse_saxo_time(ts: str) -> str:
@@ -127,8 +125,6 @@ def append_data(filepath: Path, new_rows: list[dict[str, Any]]) -> int:
         writer = csv.writer(f)
         for row in new_rows:
             date_str = parse_saxo_time(row["Time"])
-            # Saxo gives: Open, High, Low, Close, Volume
-            # CSV expects: Data, Otwarcie, Najwyzszy, Najnizszy, Zamkniecie, Wolumen
 
             line = [
                 date_str,
@@ -163,8 +159,6 @@ def main() -> None:
             print(f"[{name}] Could not determine last date. Skipping.")
             continue
 
-        # Fetch data
-        # We fetch e.g. last 100 days to be safe and overlap
         print(f"[{name}] Last date: {last_date}. Fetching recent data...")
         raw_data = fetch_ohlc(uic, limit=100)
 
@@ -172,7 +166,6 @@ def main() -> None:
             print(f"[{name}] No data returned from API.")
             continue
 
-        # Filter new data
         new_data = []
         for row in raw_data:
             row_date = parse_saxo_time(row["Time"])

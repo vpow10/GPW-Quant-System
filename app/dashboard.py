@@ -111,9 +111,6 @@ class Dashboard(App):
                 with VerticalScroll():
                     with Vertical(classes="box"):
                         yield Label("MANUAL ORDER FORM")
-                        # We reuse the logic from app.py roughly
-                        # Assuming symbol/UIC selection is same as Auto for simplicity?
-                        # Or separate? Let's make it separate to be safe.
                         yield Select(
                             self.trader.list_symbols(), prompt="Instrument", id="man-uic"
                         )
@@ -177,7 +174,6 @@ class Dashboard(App):
     async def action_sync(self) -> None:
         log = self.query_one("#monitor-log", Log)
         try:
-            # Running sync in thread because it's blocking I/O
             loop = asyncio.get_running_loop()
             logs = await loop.run_in_executor(None, sync_gpw_data)
             for msg in logs:
@@ -191,8 +187,6 @@ class Dashboard(App):
         lbl.update("Fetching...")
         loop = asyncio.get_running_loop()
         res = await loop.run_in_executor(None, self.trader.get_wallet)
-        # Saxo OpenApi balance structure varies, specifically usually "Data" list
-        # We'll dump generic info first
         if "Data" in res and isinstance(res["Data"], list) and len(res["Data"]) > 0:
             bal = res["Data"][0]
             txt = (
@@ -216,12 +210,10 @@ class Dashboard(App):
 
         loop = asyncio.get_running_loop()
 
-        # generate_signal does I/O (loading csv)
         if uic == Select.BLANK:
             log.write_line("Select instrument!")
             return
 
-        # Ensure arguments are of correct type for mypy
         s_val = str(strat)
         u_val = int(str(uic))
         res = await loop.run_in_executor(None, self.trader.generate_signal, s_val, u_val)
@@ -309,10 +301,6 @@ class Dashboard(App):
             # Execution
             loop = asyncio.get_running_loop()
             if preview:
-                # SaxoClient preview is a separate call 'preview_order' but build_order_payload is needed first
-                # I'll just use build_order_payload logic from client if I had access, but LiveTrader wraps execute_trade.
-                # LiveTrader doesn't expose preview currently.
-                # For now, I'll skip preview implementation to save space or just log payload.
                 log.write_line("Preview not fully implemented in Engine yet.")
             else:
                 log.write_line(f"Placing {side} {amount}...")

@@ -50,8 +50,6 @@ def test_always_long_on_constant_returns() -> None:
 
     res = engine.run_single_symbol(df=df, symbol="test")
 
-    # On the first day we have no exposure (weight_lag1 = 0),
-    # so effectively we have 9 days at +1% on the capital.
     expected = 100_000.0 * (1.01 ** (n_days - 1))
 
     assert np.isclose(res.equity_curve["equity"].iloc[-1], expected, rtol=1e-6)

@@ -10,7 +10,7 @@ import httpx
 from app.sync import NAME_MAP, UIC_MAP
 from data.scripts.preprocess_gpw import process_symbol
 from data.scripts.saxo_client import SaxoClient
-from strategies.config_strategies import STRATEGY_CONFIG, STRATEGY_REGISTRY
+from strategies.config_strategies import STRATEGY_CONFIG, get_strategy_class
 
 
 class LiveTrader:
@@ -76,38 +76,27 @@ class LiveTrader:
 
         symbol_stem = filename.replace(".csv", "")
 
-        # 1. Preprocess (load data)
         df = process_symbol(symbol_stem)
         if df is None or df.empty:
             return {"error": f"No data for {symbol_stem}"}
 
-        # 2. Load Strategy
-        strat_cls = STRATEGY_REGISTRY.get(strategy_name)
-        strat_cfg = STRATEGY_CONFIG.get(strategy_name)
+        strat_cfg = STRATEGY_CONFIG.get(strategy_name, {})
 
-        # Determine strict class lookup if not in registry directly (some config keys point to same class)
-        # In config_strategies.py, STRATEGY_REGISTRY keys match STRATEGY_CONFIG keys?
-        # Yes, mostly.
-        if not strat_cls:
-            # Fallback logic if registry keys don't perfectly match config names (e.g. variants)
-            # Looking at config_strategies.py, they DO match.
-            return {"error": f"Strategy {strategy_name} not found in registry."}
+        try:
+            strategy_cls = get_strategy_class(strategy_name)
+        except KeyError:
+            return {"error": f"Unknown strategy {strategy_name}"}
 
-        strategy = strat_cls(**strat_cfg) if strat_cfg else strat_cls()
+        strategy = strategy_cls(**strat_cfg) if strat_cfg else strategy_cls()
 
-        # 3. Generate Signals
-        # Strategies expect 'date', 'close', etc. preprocess_gpw gives exactly that.
         try:
             df_sig = strategy.generate_signals(df)
         except Exception as e:
             return {"error": f"Strategy failed: {e}"}
 
-        # 4. Get the LAST signal (for "tomorrow")
         last_row = df_sig.iloc[-1]
 
-        # Convert last_row to dict to include all metrics (momentum, z-score, etc.)
         result = cast("dict[str, Any]", last_row.to_dict())
-        # Ensure primitive types for JSON/usage
         if hasattr(result["date"], "strftime"):
             result["date"] = result["date"].strftime("%Y-%m-%d")
         else:
@@ -161,31 +150,23 @@ class LiveTrader:
         if "Data" not in raw:
             return []
 
-        # Parse Saxo NetPositions
-        # Usually list under "Data"
         positions = []
         for item in raw["Data"]:
-            # NetPositionBase has 'Uic', 'Amount', 'NetPositionId'
-            # Sim vs Live consistency varies. Check for nested structure first.
             if "NetPositionBase" in item:
                 base = item["NetPositionBase"]
                 view = item.get("NetPositionView", {})
 
                 uic = base.get("Uic")
                 qty = base.get("Amount", 0)
-                # If Amount is 0, check AmountLong/Short? Usually Amount is sufficient.
 
                 p = {
                     "uic": uic,
                     "qty": qty,
                     "id": item.get("NetPositionId"),
                     "price": view.get("CurrentPrice", 0.0),
-                    # MarketValueOpen can be unreliable (negative?) if market closed.
-                    # We will rely on re-calculating value in the trader script using latest data.
                     "market_value": view.get("MarketValueOpen", 0.0),
                 }
             else:
-                # Flat structure (fallback)
                 p = {
                     "uic": item.get("Uic"),
                     "qty": item.get("Amount", 0),
