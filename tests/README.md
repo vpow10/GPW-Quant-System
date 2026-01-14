@@ -8,7 +8,7 @@ Ten katalog zawiera testy jednostkowe i integracyjne dla całego systemu. Używa
 - **`test_rsi.py`**: Szczegółowe testy logiki strategii RSI (poprawność obliczeń, sygnały generowane na wzorcowych danych).
 - **`test_run_backtest.py`**: Testy silnika backtestu (sprawdzenie przepływu danych wejściowych i generowania raportów).
 - **`test_momentum.py`** / **`test_mean_reversion.py`**: Testy jednostkowe dla pozostałych strategii.
-
+- **`test_engine.py`**: Testy dla głównego silnika backtestów
 ## Instrukcja Uruchomienia
 
 Aby uruchomić wszystkie testy, wykonaj poniższe polecenie z głównego katalogu projektu:
