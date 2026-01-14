@@ -66,7 +66,7 @@ Dashboard będzie dostępny pod adresem: `http://localhost:5000`
 
 ## Struktura Projektu
 
-> **Wskazówka:** Większość poniższych katalogów zawiera własny plik `README.md` ze szczegółową dokumentacją techniczną.
+> **Wskazówka:** Wszystkie poniższe katalogi zawierają własny plik `README.md` ze szczegółową dokumentacją techniczną.
 
 - **`app/`**: Kod źródłowy aplikacji webowej (Flask) oraz logiki tradingowej (`daily_trader.py`).
 - **`automation/`**: Skrypty i konfiguracje do automatyzacji zadań (cron), logi i raporty dzienne.
