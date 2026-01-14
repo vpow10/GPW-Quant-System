@@ -184,6 +184,29 @@ def sync_stooq_smart() -> tuple[list[str], int]:
             else:
                 logs.append("       -> No new data.")
 
+        except RuntimeError as e:
+            if start_date == date.today():
+                logs.append("       -> No closing data for today yet - market open.")
+            elif start_date < date.today():
+                logs.append(
+                    f"       -> [WARN] Failed fetching from {start_date}. Trying fetch until yesterday..."
+                )
+                try:
+                    fallback_end = date.today() - timedelta(days=1)
+                    payload = stooq_fetch.fetch_csv(symbol, start=start_date, end=fallback_end)
+                    rows_added = merge_and_save(filepath, payload)
+                    if rows_added > 0:
+                        logs.append(
+                            f"       -> [FALLBACK] Added {rows_added} rows (until yesterday)."
+                        )
+                        updated_count += 1
+                    else:
+                        logs.append("       -> [FALLBACK] No new data.")
+                except Exception as e2:
+                    logs.append(f"       -> [FAIL] Fallback also failed: {e2}")
+            else:
+                logs.append(f"       -> [FAIL] {e}")
+
         except Exception as e:
             logs.append(f"       -> [FAIL] {e}")
 

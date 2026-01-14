@@ -39,7 +39,12 @@ async function refreshBalance() {
 
 async function syncData() {
     const logBox = 'monitor-log';
+    const spinner = document.getElementById('sync-spinner');
+
     log(logBox, "Sync started...");
+    // Show spinner and text msg
+    if (spinner) spinner.style.display = 'inline-block';
+
     try {
         const res = await fetch('/api/sync', { method: 'POST' });
         const data = await res.json();
@@ -53,6 +58,8 @@ async function syncData() {
         }
     } catch (e) {
         log(logBox, `Network error: ${e}`);
+    } finally {
+        if (spinner) spinner.style.display = 'none';
     }
 }
 
